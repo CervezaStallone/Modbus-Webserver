@@ -1,0 +1,197 @@
+<!-- Line Chart Widget voor trend visualisatie -->
+<div class="dashboard-widget widget-line-chart" data-widget-id="{{ widget.id }}" data-register-id="{{ widget.register.id }}">
+    <div class="widget-header">
+        <h5 class="widget-title">{{ widget.name }}</h5>
+        <div class="widget-actions">
+            <button class="btn btn-sm btn-link" onclick="refreshWidget({{ widget.id }})" title="Ververs">
+                <i class="bi bi-arrow-clockwise"></i>
+            </button>
+            <button class="btn btn-sm btn-link" onclick="toggleWidget({{ widget.id }})" title="Inklappen">
+                <i class="bi bi-chevron-up"></i>
+            </button>
+        </div>
+    </div>
+    
+    <div class="widget-body">
+        <div class="widget-loading" style="display: none;">
+            <div class="spinner-border spinner-border-sm" role="status">
+                <span class="visually-hidden">Laden...</span>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <canvas id="chart-{{ widget.id }}"></canvas>
+        </div>
+        
+        <div class="widget-info">
+            <span class="current-value">
+                <strong>Huidige waarde:</strong> 
+                <span id="current-value-{{ widget.id }}">--</span> 
+                <span class="unit">{{ widget.register.unit }}</span>
+            </span>
+            <span class="last-update">
+                <small class="text-muted">
+                    Laatst bijgewerkt: <span id="last-update-{{ widget.id }}">--</span>
+                </small>
+            </span>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const widgetId = {{ widget.id }};
+    const registerId = {{ widget.register.id }};
+    const config = {{ widget.config|safe }};
+    
+    // Chart configuratie
+    const chartConfig = {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: '{{ widget.register.name }}',
+                data: [],
+                borderColor: config.chart_color || '#007bff',
+                backgroundColor: (config.chart_color || '#007bff') + '20',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.4,
+                pointRadius: 0,
+                pointHoverRadius: 5
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: config.show_legend !== false
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false
+                }
+            },
+            scales: {
+                x: {
+                    type: 'time',
+                    time: {
+                        displayFormats: {
+                            minute: 'HH:mm',
+                            hour: 'HH:mm'
+                        }
+                    },
+                    ticks: {
+                        maxRotation: 0,
+                        autoSkipPadding: 20
+                    }
+                },
+                y: {
+                    beginAtZero: config.y_axis_mode !== 'static',
+                    min: config.y_axis_min,
+                    max: config.y_axis_max,
+                    ticks: {
+                        callback: function(value) {
+                            return value.toFixed(1) + ' {{ widget.register.unit }}';
+                        }
+                    }
+                }
+            },
+            interaction: {
+                mode: 'nearest',
+                axis: 'x',
+                intersect: false
+            }
+        }
+    };
+    
+    // Maak chart
+    const ctx = document.getElementById('chart-{{ widget.id }}').getContext('2d');
+    const chart = new Chart(ctx, chartConfig);
+    
+    // Laad initiële data
+    loadChartData();
+    
+    function loadChartData() {
+        const timeRange = config.time_range || 60; // minuten
+        
+        fetch(`/api/v1/registers/${registerId}/trend_data/?hours=${Math.ceil(timeRange / 60)}`)
+            .then(response => response.json())
+            .then(data => {
+                const labels = [];
+                const values = [];
+                
+                data.forEach(item => {
+                    labels.push(new Date(item.timestamp));
+                    values.push(item.value);
+                });
+                
+                chart.data.labels = labels;
+                chart.data.datasets[0].data = values;
+                chart.update('none'); // Update without animation
+                
+                // Update current value
+                if (data.length > 0) {
+                    const latest = data[0];
+                    document.getElementById(`current-value-${widgetId}`).textContent = 
+                        latest.value.toFixed(config.decimal_places || 2);
+                    document.getElementById(`last-update-${widgetId}`).textContent = 
+                        new Date(latest.timestamp).toLocaleString('nl-NL');
+                }
+            })
+            .catch(error => {
+                console.error('Error loading chart data:', error);
+            });
+    }
+    
+    // WebSocket update handler
+    window.addEventListener('registerUpdate', function(event) {
+        if (event.detail.register_id === registerId) {
+            const timestamp = new Date(event.detail.timestamp);
+            const value = event.detail.value;
+            
+            // Voeg data point toe
+            chart.data.labels.push(timestamp);
+            chart.data.datasets[0].data.push(value);
+            
+            // Houd maximaal X datapunten
+            const maxPoints = 1000;
+            if (chart.data.labels.length > maxPoints) {
+                chart.data.labels.shift();
+                chart.data.datasets[0].data.shift();
+            }
+            
+            chart.update('none');
+            
+            // Update current value display
+            document.getElementById(`current-value-${widgetId}`).textContent = 
+                value.toFixed(config.decimal_places || 2);
+            document.getElementById(`last-update-${widgetId}`).textContent = 
+                timestamp.toLocaleString('nl-NL');
+        }
+    });
+    
+    // Refresh functie
+    window.refreshWidget = window.refreshWidget || {};
+    window.refreshWidget[widgetId] = loadChartData;
+    
+    // Toggle functie
+    window.toggleWidget = window.toggleWidget || {};
+    window.toggleWidget[widgetId] = function() {
+        const widgetEl = document.querySelector(`[data-widget-id="${widgetId}"]`);
+        const body = widgetEl.querySelector('.widget-body');
+        const icon = widgetEl.querySelector('.widget-actions i.bi-chevron-up, .widget-actions i.bi-chevron-down');
+        
+        if (body.style.display === 'none') {
+            body.style.display = 'block';
+            icon.classList.remove('bi-chevron-down');
+            icon.classList.add('bi-chevron-up');
+        } else {
+            body.style.display = 'none';
+            icon.classList.remove('bi-chevron-up');
+            icon.classList.add('bi-chevron-down');
+        }
+    };
+})();
+</script>

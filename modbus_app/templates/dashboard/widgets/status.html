@@ -1,0 +1,147 @@
+<!-- Status Indicator Widget voor boolean/status waarden -->
+<div class="dashboard-widget widget-status" data-widget-id="{{ widget.id }}" data-register-id="{{ widget.register.id }}">
+    <div class="widget-header">
+        <h5 class="widget-title">{{ widget.name }}</h5>
+    </div>
+    
+    <div class="widget-body text-center">
+        <div class="status-indicator-container">
+            <div id="status-indicator-{{ widget.id }}" class="status-indicator status-unknown">
+                <i class="bi bi-question-circle status-icon"></i>
+            </div>
+            
+            <div class="status-label mt-2">
+                <span id="status-label-{{ widget.id }}" class="fw-bold">Unknown</span>
+            </div>
+            
+            <div class="status-timestamp mt-1">
+                <small class="text-muted">
+                    <span id="status-timestamp-{{ widget.id }}">--</span>
+                </small>
+            </div>
+        </div>
+        
+        {% if widget.config.show_description|default:True %}
+        <div class="status-description mt-2">
+            <small class="text-muted">
+                {{ widget.register.description|default:widget.register.name }}
+            </small>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.status-indicator {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.status-indicator .status-icon {
+    font-size: 48px;
+    color: white;
+}
+
+.status-indicator.status-online {
+    background-color: #28a745;
+    box-shadow: 0 0 20px rgba(40, 167, 69, 0.5);
+}
+
+.status-indicator.status-offline {
+    background-color: #6c757d;
+}
+
+.status-indicator.status-error {
+    background-color: #dc3545;
+    box-shadow: 0 0 20px rgba(220, 53, 69, 0.5);
+}
+
+.status-indicator.status-warning {
+    background-color: #ffc107;
+    box-shadow: 0 0 20px rgba(255, 193, 7, 0.5);
+}
+
+.status-indicator.status-unknown {
+    background-color: #6c757d;
+}
+</style>
+
+<script>
+(function() {
+    const widgetId = {{ widget.id }};
+    const registerId = {{ widget.register.id }};
+    const config = {{ widget.config|safe }};
+    
+    function updateStatus(value, timestamp) {
+        const indicatorEl = document.getElementById(`status-indicator-${widgetId}`);
+        const labelEl = document.getElementById(`status-label-${widgetId}`);
+        const timestampEl = document.getElementById(`status-timestamp-${widgetId}`);
+        const iconEl = indicatorEl.querySelector('.status-icon');
+        
+        // Bepaal status op basis van waarde
+        let status, label, iconClass;
+        
+        if (config.status_map) {
+            // Gebruik custom status mapping
+            const statusConfig = config.status_map[value] || config.status_map['default'];
+            status = statusConfig.class || 'unknown';
+            label = statusConfig.label || value;
+            iconClass = statusConfig.icon || 'bi-question-circle';
+        } else {
+            // Default boolean status
+            if (value === true || value === 1 || value === '1' || value === 'true') {
+                status = 'online';
+                label = config.labels?.online || 'Online';
+                iconClass = 'bi-check-circle';
+            } else if (value === false || value === 0 || value === '0' || value === 'false') {
+                status = 'offline';
+                label = config.labels?.offline || 'Offline';
+                iconClass = 'bi-x-circle';
+            } else {
+                status = 'unknown';
+                label = 'Unknown';
+                iconClass = 'bi-question-circle';
+            }
+        }
+        
+        // Update classes
+        indicatorEl.className = `status-indicator status-${status}`;
+        
+        // Update icon
+        iconEl.className = `bi ${iconClass} status-icon`;
+        
+        // Update label
+        labelEl.textContent = label;
+        
+        // Update timestamp
+        if (timestamp) {
+            const date = new Date(timestamp);
+            timestampEl.textContent = date.toLocaleString('nl-NL');
+        }
+    }
+    
+    // Laad initiële status
+    fetch(`/api/v1/registers/${registerId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.current_value) {
+                updateStatus(data.current_value.value, data.current_value.timestamp);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading status:', error);
+        });
+    
+    // WebSocket update handler
+    window.addEventListener('registerUpdate', function(event) {
+        if (event.detail.register_id === registerId) {
+            updateStatus(event.detail.value, event.detail.timestamp);
+        }
+    });
+})();
+</script>

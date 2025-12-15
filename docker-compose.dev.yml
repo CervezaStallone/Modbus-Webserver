@@ -1,0 +1,16 @@
+# Development overrides for docker-compose
+version: '3.8'
+
+services:
+  web:
+    command: python manage.py runserver 0.0.0.0:8000
+    environment:
+      - DJANGO_DEBUG=True
+    volumes:
+      - .:/app
+
+  celery_worker:
+    command: celery -A modbus_webserver worker -l debug --concurrency=2
+
+  celery_beat:
+    command: celery -A modbus_webserver beat -l debug

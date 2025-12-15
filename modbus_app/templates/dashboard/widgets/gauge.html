@@ -1,0 +1,113 @@
+<!-- Gauge Widget voor single value met min/max -->
+<div class="dashboard-widget widget-gauge" data-widget-id="{{ widget.id }}" data-register-id="{{ widget.register.id }}">
+    <div class="widget-header">
+        <h5 class="widget-title">{{ widget.name }}</h5>
+    </div>
+    
+    <div class="widget-body">
+        <div class="gauge-container">
+            <canvas id="gauge-{{ widget.id }}"></canvas>
+        </div>
+        
+        <div class="gauge-value">
+            <span id="gauge-value-{{ widget.id }}" class="value">--</span>
+            <span class="unit">{{ widget.register.unit }}</span>
+        </div>
+        
+        <div class="gauge-range">
+            <span class="min-value">{{ widget.config.min|default:widget.register.min_value|default:0 }}</span>
+            <span class="max-value">{{ widget.config.max|default:widget.register.max_value|default:100 }}</span>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const widgetId = {{ widget.id }};
+    const registerId = {{ widget.register.id }};
+    const config = {{ widget.config|safe }};
+    
+    const minValue = config.min || {{ widget.register.min_value|default:0 }};
+    const maxValue = config.max || {{ widget.register.max_value|default:100 }};
+    
+    // Gauge chart configuratie
+    const chartConfig = {
+        type: 'doughnut',
+        data: {
+            datasets: [{
+                data: [0, 100],
+                backgroundColor: [
+                    config.color || '#007bff',
+                    '#e9ecef'
+                ],
+                borderWidth: 0,
+                circumference: 180,
+                rotation: 270
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false
+                },
+                tooltip: {
+                    enabled: false
+                }
+            },
+            cutout: '75%'
+        }
+    };
+    
+    const ctx = document.getElementById('gauge-{{ widget.id }}').getContext('2d');
+    const chart = new Chart(ctx, chartConfig);
+    
+    function updateGauge(value) {
+        // Bereken percentage
+        const percentage = ((value - minValue) / (maxValue - minValue)) * 100;
+        const clampedPercentage = Math.max(0, Math.min(100, percentage));
+        
+        // Update chart
+        chart.data.datasets[0].data = [clampedPercentage, 100 - clampedPercentage];
+        
+        // Update kleur op basis van thresholds
+        let color = config.color || '#007bff';
+        if (config.thresholds) {
+            if (percentage >= config.thresholds.critical) {
+                color = '#dc3545'; // Red
+            } else if (percentage >= config.thresholds.warning) {
+                color = '#ffc107'; // Yellow
+            } else {
+                color = '#28a745'; // Green
+            }
+        }
+        chart.data.datasets[0].backgroundColor[0] = color;
+        
+        chart.update('none');
+        
+        // Update value display
+        document.getElementById(`gauge-value-${widgetId}`).textContent = 
+            value.toFixed(config.decimal_places || 1);
+    }
+    
+    // Laad initiële waarde
+    fetch(`/api/v1/registers/${registerId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.current_value) {
+                updateGauge(data.current_value.value);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading gauge value:', error);
+        });
+    
+    // WebSocket update handler
+    window.addEventListener('registerUpdate', function(event) {
+        if (event.detail.register_id === registerId) {
+            updateGauge(event.detail.value);
+        }
+    });
+})();
+</script>

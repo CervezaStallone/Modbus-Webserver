@@ -1,0 +1,41 @@
+<!-- Sidebar Navigation -->
+<div class="bg-dark border-end" id="sidebar-wrapper">
+    <div class="sidebar-heading bg-dark text-white p-3">
+        <h5 class="mb-0">Modbus Server</h5>
+    </div>
+    <div class="list-group list-group-flush">
+        <a href="{% url 'modbus_app:dashboard' %}" class="list-group-item list-group-item-action bg-dark text-white">
+            Dashboard
+        </a>
+        
+        <div class="text-white px-3 py-2 small fw-bold">CONFIGURATIE</div>
+        
+        <a href="{% url 'modbus_app:interface_list' %}" class="list-group-item list-group-item-action bg-dark text-white">
+            Interfaces
+        </a>
+        <a href="{% url 'modbus_app:device_list' %}" class="list-group-item list-group-item-action bg-dark text-white">
+            Devices
+        </a>
+        <a href="{% url 'modbus_app:register_list' %}" class="list-group-item list-group-item-action bg-dark text-white">
+            Registers
+        </a>
+        <a href="#" class="list-group-item list-group-item-action bg-dark text-white">
+            Dashboard Layout
+        </a>
+        <a href="#" class="list-group-item list-group-item-action bg-dark text-white">
+            Alarms
+        </a>
+        <a href="#" class="list-group-item list-group-item-action bg-dark text-white">
+            Templates
+        </a>
+        
+        <div class="text-white px-3 py-2 small fw-bold">SYSTEEM</div>
+        
+        <a href="/admin/" class="list-group-item list-group-item-action bg-dark text-white">
+            Admin Panel
+        </a>
+        <a href="/api/docs/" class="list-group-item list-group-item-action bg-dark text-white">
+            API Docs
+        </a>
+    </div>
+</div>

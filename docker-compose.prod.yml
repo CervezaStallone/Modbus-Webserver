@@ -1,0 +1,18 @@
+# Production overrides for docker-compose
+version: '3.8'
+
+services:
+  web:
+    restart: always
+    environment:
+      - DJANGO_DEBUG=False
+  
+  celery_worker:
+    restart: always
+    command: celery -A modbus_webserver worker -l info --concurrency=8
+  
+  celery_beat:
+    restart: always
+  
+  nginx:
+    restart: always

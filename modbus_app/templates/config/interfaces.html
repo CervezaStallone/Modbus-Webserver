@@ -1,0 +1,403 @@
+{% extends "base.html" %}
+
+{% block title %}Modbus Interfaces - Configuratie{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>Modbus Interfaces</h2>
+            <p class="text-muted">Configureer Modbus RTU en TCP interfaces</p>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-12">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#interfaceModal" onclick="openInterfaceModal()">
+                <i class="bi bi-plus-circle"></i> Nieuwe Interface
+            </button>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="interfacesTable">
+                            <thead>
+                                <tr>
+                                    <th>Naam</th>
+                                    <th>Protocol</th>
+                                    <th>Verbinding</th>
+                                    <th>Status</th>
+                                    <th>Devices</th>
+                                    <th>Laatste Error</th>
+                                    <th>Acties</th>
+                                </tr>
+                            </thead>
+                            <tbody id="interfaceTableBody">
+                                <tr>
+                                    <td colspan="7" class="text-center">
+                                        <div class="spinner-border spinner-border-sm" role="status">
+                                            <span class="visually-hidden">Laden...</span>
+                                        </div>
+                                        Interfaces laden...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Interface Modal -->
+<div class="modal fade" id="interfaceModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="interfaceModalTitle">Nieuwe Interface</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="interfaceForm">
+                    <input type="hidden" id="interfaceId" value="">
+                    
+                    <div class="mb-3">
+                        <label for="interfaceName" class="form-label">Naam *</label>
+                        <input type="text" class="form-control" id="interfaceName" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="interfaceProtocol" class="form-label">Protocol *</label>
+                        <select class="form-select" id="interfaceProtocol" onchange="toggleProtocolFields()" required>
+                            <option value="">-- Selecteer protocol --</option>
+                            <option value="RTU">Modbus RTU (Serial)</option>
+                            <option value="TCP">Modbus TCP/IP</option>
+                        </select>
+                    </div>
+
+                    <!-- RTU velden -->
+                    <div id="rtuFields" style="display: none;">
+                        <h6 class="mb-3">Serial Poort Instellingen</h6>
+                        
+                        <div class="mb-3">
+                            <label for="port" class="form-label">Serial Poort *</label>
+                            <input type="text" class="form-control" id="port" placeholder="COM1 of /dev/ttyUSB0">
+                            <small class="text-muted">Windows: COM1, COM2, etc. Linux: /dev/ttyUSB0, /dev/ttyS0</small>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-3 mb-3">
+                                <label for="baudrate" class="form-label">Baudrate</label>
+                                <select class="form-select" id="baudrate">
+                                    <option value="9600" selected>9600</option>
+                                    <option value="19200">19200</option>
+                                    <option value="38400">38400</option>
+                                    <option value="57600">57600</option>
+                                    <option value="115200">115200</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label for="parity" class="form-label">Pariteit</label>
+                                <select class="form-select" id="parity">
+                                    <option value="N" selected>None</option>
+                                    <option value="E">Even</option>
+                                    <option value="O">Odd</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label for="stopbits" class="form-label">Stop Bits</label>
+                                <select class="form-select" id="stopbits">
+                                    <option value="1" selected>1</option>
+                                    <option value="2">2</option>
+                                </select>
+                            </div>
+
+                            <div class="col-md-3 mb-3">
+                                <label for="bytesize" class="form-label">Data Bits</label>
+                                <select class="form-select" id="bytesize">
+                                    <option value="7">7</option>
+                                    <option value="8" selected>8</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TCP velden -->
+                    <div id="tcpFields" style="display: none;">
+                        <h6 class="mb-3">TCP/IP Instellingen</h6>
+                        
+                        <div class="row">
+                            <div class="col-md-8 mb-3">
+                                <label for="tcpHost" class="form-label">IP Adres / Hostname *</label>
+                                <input type="text" class="form-control" id="tcpHost" placeholder="192.168.1.100">
+                            </div>
+
+                            <div class="col-md-4 mb-3">
+                                <label for="tcpPort" class="form-label">Poort</label>
+                                <input type="number" class="form-control" id="tcpPort" value="502">
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="timeout" class="form-label">Timeout (seconden)</label>
+                        <input type="number" class="form-control" id="timeout" value="3" step="0.1" min="0.1">
+                    </div>
+
+                    <div class="alert alert-danger d-none" id="interfaceFormError"></div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+                <button type="button" class="btn btn-primary" onclick="testConnection()">Test Verbinding</button>
+                <button type="button" class="btn btn-success" onclick="saveInterface()">Opslaan</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let interfaceModal;
+
+document.addEventListener('DOMContentLoaded', function() {
+    interfaceModal = new bootstrap.Modal(document.getElementById('interfaceModal'));
+    loadInterfaces();
+});
+
+function toggleProtocolFields() {
+    const protocol = document.getElementById('interfaceProtocol').value;
+    const rtuFields = document.getElementById('rtuFields');
+    const tcpFields = document.getElementById('tcpFields');
+    
+    if (protocol === 'RTU') {
+        rtuFields.style.display = 'block';
+        tcpFields.style.display = 'none';
+    } else if (protocol === 'TCP') {
+        rtuFields.style.display = 'none';
+        tcpFields.style.display = 'block';
+    } else {
+        rtuFields.style.display = 'none';
+        tcpFields.style.display = 'none';
+    }
+}
+
+function loadInterfaces() {
+    fetch('/api/v1/interfaces/')
+        .then(response => response.json())
+        .then(data => {
+            const tbody = document.getElementById('interfaceTableBody');
+            tbody.innerHTML = '';
+            
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center">Geen interfaces geconfigureerd</td></tr>';
+                return;
+            }
+            
+            data.forEach(iface => {
+                const row = document.createElement('tr');
+                
+                const statusClass = iface.connection_status === 'online' ? 'success' : 
+                                  iface.connection_status === 'offline' ? 'secondary' : 'danger';
+                
+                const connectionInfo = iface.protocol === 'RTU' ? 
+                    `${iface.port || 'N/A'} @ ${iface.baudrate || 9600}` :
+                    `${iface.host || 'N/A'}:${iface.tcp_port || 502}`;
+                
+                row.innerHTML = `
+                    <td><strong>${iface.name}</strong></td>
+                    <td><span class="badge bg-info">${iface.protocol_display}</span></td>
+                    <td><code>${connectionInfo}</code></td>
+                    <td><span class="badge bg-${statusClass}">${iface.status_display}</span></td>
+                    <td>${iface.device_count || 0} devices</td>
+                    <td><small class="text-muted">${iface.last_seen ? new Date(iface.last_seen).toLocaleString() : '-'}</small></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="testInterfaceConnection(${iface.id})" title="Test verbinding">
+                            <i class="bi bi-lightning"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="editInterface(${iface.id})" title="Bewerken">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteInterface(${iface.id})" title="Verwijderen">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        })
+        .catch(error => {
+            console.error('Fout bij laden interfaces:', error);
+            showNotification('Fout bij laden interfaces', 'danger');
+        });
+}
+
+function openInterfaceModal(id = null) {
+    document.getElementById('interfaceForm').reset();
+    document.getElementById('interfaceId').value = '';
+    document.getElementById('interfaceModalTitle').textContent = 'Nieuwe Interface';
+    document.getElementById('interfaceFormError').classList.add('d-none');
+    toggleProtocolFields();
+    
+    if (id) {
+        // Load interface data for editing
+        fetch(`/api/v1/interfaces/${id}/`)
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('interfaceId').value = data.id;
+                document.getElementById('interfaceModalTitle').textContent = 'Interface Bewerken';
+                document.getElementById('interfaceName').value = data.name;
+                document.getElementById('interfaceProtocol').value = data.protocol;
+                toggleProtocolFields();
+                
+                if (data.protocol === 'RTU') {
+                    document.getElementById('port').value = data.port || '';
+                    document.getElementById('baudrate').value = data.baudrate || 9600;
+                    document.getElementById('parity').value = data.parity || 'N';
+                    document.getElementById('stopbits').value = data.stopbits || 1;
+                    document.getElementById('bytesize').value = data.bytesize || 8;
+                } else if (data.protocol === 'TCP') {
+                    document.getElementById('tcpHost').value = data.host || '';
+                    document.getElementById('tcpPort').value = data.tcp_port || 502;
+                }
+                
+                document.getElementById('timeout').value = data.timeout || 3;
+            })
+            .catch(error => {
+                console.error('Fout bij laden interface:', error);
+                showNotification('Fout bij laden interface gegevens', 'danger');
+            });
+    }
+}
+
+function editInterface(id) {
+    openInterfaceModal(id);
+    interfaceModal.show();
+}
+
+function saveInterface() {
+    const id = document.getElementById('interfaceId').value;
+    const protocol = document.getElementById('interfaceProtocol').value;
+    
+    const data = {
+        name: document.getElementById('interfaceName').value,
+        protocol: protocol,
+        timeout: parseFloat(document.getElementById('timeout').value)
+    };
+    
+    if (protocol === 'RTU') {
+        data.port = document.getElementById('port').value;
+        data.baudrate = parseInt(document.getElementById('baudrate').value);
+        data.parity = document.getElementById('parity').value;
+        data.stopbits = parseInt(document.getElementById('stopbits').value);
+        data.bytesize = parseInt(document.getElementById('bytesize').value);
+    } else if (protocol === 'TCP') {
+        data.host = document.getElementById('tcpHost').value;
+        data.tcp_port = parseInt(document.getElementById('tcpPort').value);
+    }
+    
+    const method = id ? 'PUT' : 'POST';
+    const url = id ? `/api/v1/interfaces/${id}/` : '/api/v1/interfaces/';
+    
+    fetch(url, {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => Promise.reject(err));
+        }
+        return response.json();
+    })
+    .then(data => {
+        showNotification('Interface succesvol opgeslagen', 'success');
+        interfaceModal.hide();
+        loadInterfaces();
+    })
+    .catch(error => {
+        console.error('Fout bij opslaan:', error);
+        const errorDiv = document.getElementById('interfaceFormError');
+        errorDiv.textContent = JSON.stringify(error);
+        errorDiv.classList.remove('d-none');
+    });
+}
+
+function testInterfaceConnection(id) {
+    showNotification('Verbinding testen...', 'info');
+    
+    fetch(`/api/v1/interfaces/${id}/test_connection/`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            showNotification(data.message, 'success');
+            loadInterfaces();
+        } else {
+            showNotification(data.message, 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Fout bij testen verbinding:', error);
+        showNotification('Fout bij testen verbinding', 'danger');
+    });
+}
+
+function testConnection() {
+    const id = document.getElementById('interfaceId').value;
+    if (!id) {
+        showNotification('Sla eerst de interface op voordat je de verbinding test', 'warning');
+        return;
+    }
+    testInterfaceConnection(id);
+}
+
+function deleteInterface(id) {
+    if (!confirm('Weet je zeker dat je deze interface wilt verwijderen?')) {
+        return;
+    }
+    
+    fetch(`/api/v1/interfaces/${id}/`, {
+        method: 'DELETE'
+    })
+    .then(response => {
+        if (response.ok) {
+            showNotification('Interface verwijderd', 'success');
+            loadInterfaces();
+        } else {
+            showNotification('Fout bij verwijderen interface', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Fout bij verwijderen:', error);
+        showNotification('Fout bij verwijderen interface', 'danger');
+    });
+}
+
+function showNotification(message, type) {
+    // Simple notification - kan later vervangen worden door een mooiere toast
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
+    alertDiv.style.zIndex = '9999';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+</script>
+{% endblock %}

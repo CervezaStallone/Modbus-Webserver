@@ -1,0 +1,52 @@
+/* Navbar / Sidebar Styling */
+
+#wrapper {
+    overflow-x: hidden;
+}
+
+#sidebar-wrapper {
+    min-height: 100vh;
+    margin-left: -15rem;
+    transition: margin 0.25s ease-out;
+    width: 15rem;
+}
+
+#sidebar-wrapper .sidebar-heading {
+    font-size: 1.2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+#sidebar-wrapper .list-group-item {
+    border: none;
+    padding: 0.75rem 1.25rem;
+    transition: all 0.3s;
+}
+
+#sidebar-wrapper .list-group-item:hover {
+    background-color: #495057 !important;
+    padding-left: 1.5rem;
+}
+
+#page-content-wrapper {
+    min-width: 100vw;
+}
+
+#wrapper.toggled #sidebar-wrapper {
+    margin-left: 0;
+}
+
+/* Mobile responsiveness */
+@media (min-width: 768px) {
+    #sidebar-wrapper {
+        margin-left: 0;
+    }
+    
+    #page-content-wrapper {
+        min-width: 0;
+        width: 100%;
+    }
+    
+    #wrapper.toggled #sidebar-wrapper {
+        margin-left: -15rem;
+    }
+}

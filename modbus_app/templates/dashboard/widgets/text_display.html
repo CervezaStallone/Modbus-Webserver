@@ -1,0 +1,92 @@
+<!-- Text Display Widget voor numerieke waarden -->
+<div class="dashboard-widget widget-text" data-widget-id="{{ widget.id }}" data-register-id="{{ widget.register.id }}">
+    <div class="widget-header">
+        <h5 class="widget-title">{{ widget.name }}</h5>
+    </div>
+    
+    <div class="widget-body text-center">
+        <div class="text-value-container">
+            <span id="text-value-{{ widget.id }}" class="text-value" 
+                  style="font-size: {{ widget.config.font_size|default:48 }}px;">
+                --
+            </span>
+            {% if widget.config.show_unit|default:True %}
+            <span class="text-unit">{{ widget.register.unit }}</span>
+            {% endif %}
+        </div>
+        
+        <div class="text-info mt-2">
+            <small class="text-muted">
+                {{ widget.register.description|default:widget.register.name }}
+            </small>
+        </div>
+        
+        <div class="text-timestamp mt-1">
+            <small class="text-muted">
+                <span id="text-timestamp-{{ widget.id }}">--</span>
+            </small>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const widgetId = {{ widget.id }};
+    const registerId = {{ widget.register.id }};
+    const config = {{ widget.config|safe }};
+    
+    const decimalPlaces = config.decimal_places !== undefined ? config.decimal_places : 2;
+    
+    function updateTextValue(value, timestamp) {
+        const valueEl = document.getElementById(`text-value-${widgetId}`);
+        const timestampEl = document.getElementById(`text-timestamp-${widgetId}`);
+        
+        // Format value
+        let formattedValue;
+        if (typeof value === 'number') {
+            formattedValue = value.toFixed(decimalPlaces);
+        } else {
+            formattedValue = value;
+        }
+        
+        valueEl.textContent = formattedValue;
+        
+        // Update kleur op basis van thresholds
+        valueEl.classList.remove('text-success', 'text-warning', 'text-danger');
+        if (config.thresholds) {
+            if (value >= config.thresholds.critical) {
+                valueEl.classList.add('text-danger');
+            } else if (value >= config.thresholds.warning) {
+                valueEl.classList.add('text-warning');
+            } else {
+                valueEl.classList.add('text-success');
+            }
+        }
+        
+        // Update timestamp
+        if (timestamp) {
+            const date = new Date(timestamp);
+            timestampEl.textContent = date.toLocaleString('nl-NL');
+        }
+    }
+    
+    // Laad initiële waarde
+    fetch(`/api/v1/registers/${registerId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.current_value) {
+                updateTextValue(data.current_value.value, data.current_value.timestamp);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading text value:', error);
+        });
+    
+    // WebSocket update handler
+    window.addEventListener('registerUpdate', function(event) {
+        if (event.detail.register_id === registerId) {
+            updateTextValue(event.detail.value, event.detail.timestamp);
+        }
+    });
+})();
+</script>

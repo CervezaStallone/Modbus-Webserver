@@ -1,0 +1,187 @@
+{% extends "base.html" %}
+
+{% block title %}Registers - Configuratie{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>Modbus Registers</h2>
+            <p class="text-muted">Configureer Modbus registers voor devices</p>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-md-4">
+            <select class="form-select" id="deviceFilter" onchange="filterRegisters()">
+                <option value="">-- Selecteer device --</option>
+            </select>
+        </div>
+        <div class="col-md-8">
+            <button class="btn btn-primary" onclick="window.location.href='/config/registers/add'">
+                <i class="bi bi-plus-circle"></i> Nieuw Register
+            </button>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Naam</th>
+                                    <th>Device</th>
+                                    <th>Address</th>
+                                    <th>FC</th>
+                                    <th>Type</th>
+                                    <th>Waarde</th>
+                                    <th>Eenheid</th>
+                                    <th>Status</th>
+                                    <th>Acties</th>
+                                </tr>
+                            </thead>
+                            <tbody id="registerTableBody">
+                                <tr><td colspan="9" class="text-center">Selecteer een device</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadDevices();
+    
+    // Check for device filter in URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const deviceId = urlParams.get('device');
+    if (deviceId) {
+        document.getElementById('deviceFilter').value = deviceId;
+        filterRegisters();
+    }
+});
+
+function loadDevices() {
+    fetch('/api/v1/devices/')
+        .then(response => response.json())
+        .then(devices => {
+            const select = document.getElementById('deviceFilter');
+            devices.forEach(device => {
+                const option = document.createElement('option');
+                option.value = device.id;
+                option.textContent = device.name;
+                select.appendChild(option);
+            });
+        });
+}
+
+function filterRegisters() {
+    const deviceId = document.getElementById('deviceFilter').value;
+    if (!deviceId) {
+        document.getElementById('registerTableBody').innerHTML = 
+            '<tr><td colspan="9" class="text-center">Selecteer een device</td></tr>';
+        return;
+    }
+    
+    fetch(`/api/v1/devices/${deviceId}/registers/`)
+        .then(response => response.json())
+        .then(registers => {
+            const tbody = document.getElementById('registerTableBody');
+            tbody.innerHTML = '';
+            
+            if (registers.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center">Geen registers geconfigureerd</td></tr>';
+                return;
+            }
+            
+            registers.forEach(reg => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${reg.name}</strong></td>
+                    <td>${reg.device_name}</td>
+                    <td><code>${reg.address}</code></td>
+                    <td>FC${reg.function_code}</td>
+                    <td>${reg.data_type}</td>
+                    <td id="value-${reg.id}">--</td>
+                    <td>${reg.unit || '-'}</td>
+                    <td><span class="badge bg-${reg.enabled ? 'success' : 'secondary'}">${reg.enabled ? 'Enabled' : 'Disabled'}</span></td>
+                    <td>
+                        ${reg.writable ? `<button class="btn btn-sm btn-outline-primary" onclick="writeRegister(${reg.id})" title="Schrijf"><i class="bi bi-pencil"></i></button>` : ''}
+                        <button class="btn btn-sm btn-outline-secondary" onclick="readRegister(${reg.id})" title="Lees"><i class="bi bi-arrow-clockwise"></i></button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteRegister(${reg.id})" title="Verwijder"><i class="bi bi-trash"></i></button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+                
+                // Load current value
+                loadRegisterValue(reg.id);
+            });
+        });
+}
+
+function loadRegisterValue(registerId) {
+    fetch(`/api/v1/registers/${registerId}/`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.current_value) {
+                document.getElementById(`value-${registerId}`).textContent = 
+                    data.current_value.value.toFixed(2);
+            }
+        })
+        .catch(() => {});
+}
+
+function readRegister(id) {
+    fetch(`/api/v1/registers/${id}/read_now/`, { method: 'POST' })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                document.getElementById(`value-${id}`).textContent = data.value.toFixed(2);
+                showNotification(`Waarde: ${data.value} ${data.unit}`, 'success');
+            }
+        });
+}
+
+function writeRegister(id) {
+    const value = prompt('Voer nieuwe waarde in:');
+    if (!value) return;
+    
+    fetch(`/api/v1/registers/${id}/write_value/`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ value: parseFloat(value) })
+    })
+    .then(response => response.json())
+    .then(data => {
+        showNotification(data.message, data.status === 'success' ? 'success' : 'danger');
+    });
+}
+
+function deleteRegister(id) {
+    if (!confirm('Weet je zeker dat je dit register wilt verwijderen?')) return;
+    
+    fetch(`/api/v1/registers/${id}/`, { method: 'DELETE' })
+        .then(response => {
+            if (response.ok) {
+                showNotification('Register verwijderd', 'success');
+                filterRegisters();
+            }
+        });
+}
+
+function showNotification(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
+    alertDiv.style.zIndex = '9999';
+    alertDiv.innerHTML = `${message}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>`;
+    document.body.appendChild(alertDiv);
+    setTimeout(() => alertDiv.remove(), 5000);
+}
+</script>
+{% endblock %}

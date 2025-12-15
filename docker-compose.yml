@@ -1,0 +1,103 @@
+version: '3.8'
+
+services:
+  # Redis - Cache, Message Broker, Channel Layer
+  redis:
+    image: redis:7-alpine
+    container_name: modbus_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+
+  # Django Web Application
+  web:
+    build: .
+    container_name: modbus_web
+    restart: unless-stopped
+    command: gunicorn modbus_webserver.asgi:application -k uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 --workers 4
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - redis
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+  # Celery Worker
+  celery_worker:
+    build: .
+    container_name: modbus_celery_worker
+    restart: unless-stopped
+    command: celery -A modbus_webserver worker -l info --concurrency=4
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - web
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+  # Celery Beat Scheduler
+  celery_beat:
+    build: .
+    container_name: modbus_celery_beat
+    restart: unless-stopped
+    command: celery -A modbus_webserver beat -l info
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - web
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+  # Celery Flower (optional monitoring)
+  flower:
+    build: .
+    container_name: modbus_flower
+    restart: unless-stopped
+    command: celery -A modbus_webserver flower --port=5555
+    ports:
+      - "5555:5555"
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - celery_worker
+    environment:
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: modbus_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - static_volume:/app/staticfiles:ro
+      - media_volume:/app/media:ro
+    depends_on:
+      - web
+
+volumes:
+  redis_data:
+  static_volume:
+  media_volume:

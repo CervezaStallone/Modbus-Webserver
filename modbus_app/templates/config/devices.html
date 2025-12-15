@@ -1,0 +1,171 @@
+{% extends "base.html" %}
+
+{% block title %}Devices - Configuratie{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row mb-4">
+        <div class="col-12">
+            <h2>Modbus Devices</h2>
+            <p class="text-muted">Configureer Modbus slave devices</p>
+        </div>
+    </div>
+
+    <div class="row mb-3">
+        <div class="col-12">
+            <button class="btn btn-primary" onclick="window.location.href='/config/devices/add'">
+                <i class="bi bi-plus-circle"></i> Nieuw Device
+            </button>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="devicesTable">
+                            <thead>
+                                <tr>
+                                    <th>Naam</th>
+                                    <th>Interface</th>
+                                    <th>Slave ID</th>
+                                    <th>Polling Interval</th>
+                                    <th>Status</th>
+                                    <th>Registers</th>
+                                    <th>Laatste Poll</th>
+                                    <th>Acties</th>
+                                </tr>
+                            </thead>
+                            <tbody id="deviceTableBody">
+                                <tr>
+                                    <td colspan="8" class="text-center">
+                                        <div class="spinner-border spinner-border-sm" role="status">
+                                            <span class="visually-hidden">Laden...</span>
+                                        </div>
+                                        Devices laden...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    loadDevices();
+});
+
+function loadDevices() {
+    fetch('/api/v1/devices/')
+        .then(response => response.json())
+        .then(data => {
+            const tbody = document.getElementById('deviceTableBody');
+            tbody.innerHTML = '';
+            
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center">Geen devices geconfigureerd</td></tr>';
+                return;
+            }
+            
+            data.forEach(device => {
+                const row = document.createElement('tr');
+                
+                const statusClass = device.status === 'ONLINE' ? 'success' : 
+                                  device.status === 'OFFLINE' ? 'secondary' : 'danger';
+                
+                const lastPoll = device.last_poll ? 
+                    new Date(device.last_poll).toLocaleString('nl-NL') : 'Nooit';
+                
+                row.innerHTML = `
+                    <td><strong>${device.name}</strong><br><small class="text-muted">${device.description || ''}</small></td>
+                    <td>${device.interface_name}</td>
+                    <td><code>${device.slave_id}</code></td>
+                    <td>${device.polling_interval}s</td>
+                    <td><span class="badge bg-${statusClass}">${device.status_display}</span></td>
+                    <td>
+                        ${device.register_count} registers
+                        <a href="/config/registers?device=${device.id}" class="btn btn-sm btn-link">Bekijk</a>
+                    </td>
+                    <td><small>${lastPoll}</small></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" onclick="pollDevice(${device.id})" title="Poll nu">
+                            <i class="bi bi-lightning-fill"></i>
+                        </button>
+                        <a href="/config/devices/${device.id}/edit" class="btn btn-sm btn-outline-secondary" title="Bewerken">
+                            <i class="bi bi-pencil"></i>
+                        </a>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteDevice(${device.id})" title="Verwijderen">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        })
+        .catch(error => {
+            console.error('Fout bij laden devices:', error);
+            showNotification('Fout bij laden devices', 'danger');
+        });
+}
+
+function pollDevice(id) {
+    showNotification('Poll gestart...', 'info');
+    
+    fetch(`/api/v1/devices/${id}/poll_now/`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        showNotification(data.message, 'success');
+        setTimeout(loadDevices, 2000); // Reload after 2 seconds
+    })
+    .catch(error => {
+        console.error('Fout bij pollen device:', error);
+        showNotification('Fout bij pollen device', 'danger');
+    });
+}
+
+function deleteDevice(id) {
+    if (!confirm('Weet je zeker dat je dit device wilt verwijderen? Alle registers worden ook verwijderd.')) {
+        return;
+    }
+    
+    fetch(`/api/v1/devices/${id}/`, {
+        method: 'DELETE'
+    })
+    .then(response => {
+        if (response.ok) {
+            showNotification('Device verwijderd', 'success');
+            loadDevices();
+        } else {
+            showNotification('Fout bij verwijderen device', 'danger');
+        }
+    })
+    .catch(error => {
+        console.error('Fout bij verwijderen:', error);
+        showNotification('Fout bij verwijderen device', 'danger');
+    });
+}
+
+function showNotification(message, type) {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 end-0 m-3`;
+    alertDiv.style.zIndex = '9999';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+</script>
+{% endblock %}

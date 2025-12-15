@@ -1,0 +1,78 @@
+/* Dashboard Styling */
+
+.card {
+    margin-bottom: 1.5rem;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+.card-header {
+    font-weight: 600;
+}
+
+/* Status indicators */
+.status-online {
+    color: #28a745;
+}
+
+.status-offline {
+    color: #6c757d;
+}
+
+.status-error {
+    color: #dc3545;
+}
+
+.status-indicator {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.status-indicator.online {
+    background-color: #28a745;
+}
+
+.status-indicator.offline {
+    background-color: #6c757d;
+}
+
+.status-indicator.error {
+    background-color: #dc3545;
+}
+
+/* Dashboard groups */
+.dashboard-group {
+    background: #fff;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.dashboard-group-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 0.75rem;
+    border-bottom: 1px solid #dee2e6;
+    margin-bottom: 1rem;
+}
+
+.dashboard-group-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.dashboard-group.collapsed .dashboard-group-content {
+    display: none;
+}
+
+/* Responsive utilities */
+@media (max-width: 768px) {
+    .card {
+        margin-bottom: 1rem;
+    }
+}

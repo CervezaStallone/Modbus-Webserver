@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Modbus Webserver{% endblock %}
+
+{% block page_title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="alert alert-info">
+            Dashboard wordt geladen... WebSocket verbinding wordt opgezet.
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Systeem Status</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Interfaces:</strong> <span id="interface-count">0</span></p>
+                <p><strong>Devices:</strong> <span id="device-count">0</span></p>
+                <p><strong>Registers:</strong> <span id="register-count">0</span></p>
+                <p><strong>Actieve Alarms:</strong> <span id="alarm-count">0</span></p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">Welkom</h5>
+            </div>
+            <div class="card-body">
+                <h6>Modbus Webserver is actief!</h6>
+                <p>Gebruik het menu aan de linkerkant om:</p>
+                <ul>
+                    <li>Modbus interfaces te configureren (RTU/TCP)</li>
+                    <li>Devices en registers toe te voegen</li>
+                    <li>Dashboard widgets in te stellen</li>
+                    <li>Alarms te configureren</li>
+                </ul>
+                <p class="mb-0">
+                    <a href="/admin/" class="btn btn-primary me-2">Admin Panel</a>
+                    <a href="/api/docs/" class="btn btn-secondary">API Documentatie</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Dashboard Groepen</h5>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Geen dashboard widgets geconfigureerd. Configureer widgets via het admin panel.</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // WebSocket connection voor real-time updates
+    const ws = new WebSocket('ws://' + window.location.host + '/ws/dashboard/');
+    
+    ws.onopen = function(e) {
+        console.log('WebSocket connection established');
+        document.querySelector('.alert-info').classList.remove('alert-info');
+        document.querySelector('.alert').classList.add('alert-success');
+        document.querySelector('.alert').textContent = 'Dashboard verbonden. Real-time updates actief.';
+    };
+    
+    ws.onmessage = function(event) {
+        const data = JSON.parse(event.data);
+        console.log('Received data:', data);
+        // Handle real-time updates here
+    };
+    
+    ws.onerror = function(error) {
+        console.error('WebSocket error:', error);
+        document.querySelector('.alert').classList.remove('alert-success');
+        document.querySelector('.alert').classList.add('alert-danger');
+        document.querySelector('.alert').textContent = 'WebSocket verbinding mislukt.';
+    };
+    
+    ws.onclose = function(event) {
+        console.log('WebSocket connection closed');
+        setTimeout(function() {
+            location.reload();
+        }, 5000);
+    };
+</script>
+{% endblock %}
