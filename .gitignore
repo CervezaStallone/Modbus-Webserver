@@ -95,3 +95,11 @@ Thumbs.db
 /data/
 /logs/
 /backups/
+
+# Scripts - exclude root level scripts but include scripts/ folder
+/start-app.sh
+/stop-app.sh
+/start-app.ps1
+/stop-app.ps1
+# Keep scripts/ folder in repo
+!/scripts/
