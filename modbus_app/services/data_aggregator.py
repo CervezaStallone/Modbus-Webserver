@@ -47,16 +47,16 @@ class DataAggregator:
         
         # Bereken aggregaties
         aggregates = data.aggregate(
-            min_value=Min('value'),
-            max_value=Max('value'),
-            avg_value=Avg('value'),
+            min_value=Min('converted_value'),
+            max_value=Max('converted_value'),
+            avg_value=Avg('converted_value'),
             sample_count=Count('id')
         )
         
         # Sla op (of update bestaande)
         agg, created = TrendDataAggregated.objects.update_or_create(
             register=register,
-            aggregation='HOURLY',
+            interval='hourly',
             timestamp=start_time,
             defaults={
                 'min_value': aggregates['min_value'],
@@ -96,7 +96,7 @@ class DataAggregator:
         # Haal hourly aggregaties op
         hourly_data = TrendDataAggregated.objects.filter(
             register=register,
-            aggregation='HOURLY',
+            interval='hourly',
             timestamp__gte=start_time,
             timestamp__lt=end_time
         )
@@ -116,7 +116,7 @@ class DataAggregator:
         # Sla op (of update bestaande)
         agg, created = TrendDataAggregated.objects.update_or_create(
             register=register,
-            aggregation='DAILY',
+            interval='daily',
             timestamp=start_time,
             defaults={
                 'min_value': aggregates['min_value'],
@@ -159,7 +159,7 @@ class DataAggregator:
         # Haal daily aggregaties op
         daily_data = TrendDataAggregated.objects.filter(
             register=register,
-            aggregation='DAILY',
+            interval='daily',
             timestamp__gte=start_time,
             timestamp__lt=end_time
         )
@@ -179,7 +179,7 @@ class DataAggregator:
         # Sla op (of update bestaande)
         agg, created = TrendDataAggregated.objects.update_or_create(
             register=register,
-            aggregation='WEEKLY',
+            interval='weekly',
             timestamp=start_time,
             defaults={
                 'min_value': aggregates['min_value'],
@@ -264,14 +264,14 @@ class DataAggregator:
         # Cleanup hourly aggregaties
         hourly_cutoff = now - timedelta(days=hourly_data_days)
         hourly_deleted = TrendDataAggregated.objects.filter(
-            aggregation='HOURLY',
+            interval='hourly',
             timestamp__lt=hourly_cutoff
         ).delete()
         
         # Cleanup daily aggregaties
         daily_cutoff = now - timedelta(days=daily_data_days)
         daily_deleted = TrendDataAggregated.objects.filter(
-            aggregation='DAILY',
+            interval='daily',
             timestamp__lt=daily_cutoff
         ).delete()
         

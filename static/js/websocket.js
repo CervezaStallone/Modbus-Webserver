@@ -4,7 +4,14 @@
 
 class DashboardWebSocket {
     constructor(url) {
-        this.url = url;
+        // Auto-detect protocol based on page protocol
+        if (!url.startsWith('ws://') && !url.startsWith('wss://')) {
+            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const host = window.location.host;
+            this.url = `${protocol}//${host}${url}`;
+        } else {
+            this.url = url;
+        }
         this.ws = null;
         this.reconnectAttempts = 0;
         this.maxReconnectAttempts = 5;
@@ -14,6 +21,7 @@ class DashboardWebSocket {
     
     connect() {
         try {
+            console.log('Connecting to WebSocket:', this.url);
             this.ws = new WebSocket(this.url);
             
             this.ws.onopen = (e) => {

@@ -178,7 +178,6 @@ def update_calculated_registers():
     for calc_reg in calculated_registers:
         try:
             # Get latest values for source registers
-            values = {}
             for i, source_reg in enumerate(calc_reg.source_registers.all()):
                 latest_data = TrendData.objects.filter(
                     register=source_reg,
@@ -186,9 +185,9 @@ def update_calculated_registers():
                 ).order_by('-timestamp').first()
                 
                 if latest_data:
-                    values[f'register_{i+1}'] = latest_data.converted_value
+                    aeval.symtable[f'register_{i+1}'] = latest_data.converted_value
                 else:
-                    values[f'register_{i+1}'] = 0
+                    aeval.symtable[f'register_{i+1}'] = 0
             
             # Evaluate formula safely using asteval
             try:

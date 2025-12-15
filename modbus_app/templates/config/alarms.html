@@ -1,0 +1,348 @@
+{% extends 'base.html' %}
+
+{% block title %}Alarm Configuratie - Modbus Webserver{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Alarm Configuratie</h1>
+        <button class="btn btn-primary" id="addAlarmBtn">
+            <i class="bi bi-plus-circle"></i> Alarm Toevoegen
+        </button>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped" id="alarmsTable">
+                    <thead>
+                        <tr>
+                            <th>Naam</th>
+                            <th>Register</th>
+                            <th>Conditie</th>
+                            <th>Waarde</th>
+                            <th>Prioriteit</th>
+                            <th>Status</th>
+                            <th>Acties</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Loaded via JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="mt-4">
+        <h3>Alarm Geschiedenis</h3>
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Tijd</th>
+                                <th>Alarm</th>
+                                <th>Status</th>
+                                <th>Waarde</th>
+                                <th>Bericht</th>
+                            </tr>
+                        </thead>
+                        <tbody id="historyTable">
+                            <!-- Loaded via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Alarm Modal -->
+<div class="modal fade" id="alarmModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Alarm Configuratie</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="alarmForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="alarmName" class="form-label">Naam *</label>
+                                <input type="text" class="form-control" id="alarmName" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="alarmRegister" class="form-label">Register *</label>
+                                <select class="form-select" id="alarmRegister" required>
+                                    <option value="">Selecteer register...</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="alarmCondition" class="form-label">Conditie *</label>
+                                <select class="form-select" id="alarmCondition" required>
+                                    <option value="gt">Groter dan (>)</option>
+                                    <option value="gte">Groter of gelijk (>=)</option>
+                                    <option value="lt">Kleiner dan (<)</option>
+                                    <option value="lte">Kleiner of gelijk (<=)</option>
+                                    <option value="eq">Gelijk aan (=)</option>
+                                    <option value="ne">Niet gelijk aan (!=)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="alarmThreshold" class="form-label">Drempelwaarde *</label>
+                                <input type="number" class="form-control" id="alarmThreshold" step="0.01" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="alarmPriority" class="form-label">Prioriteit *</label>
+                                <select class="form-select" id="alarmPriority" required>
+                                    <option value="low">Laag</option>
+                                    <option value="medium">Normaal</option>
+                                    <option value="high">Hoog</option>
+                                    <option value="critical">Kritiek</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="alarmMessage" class="form-label">Alarm Bericht</label>
+                        <textarea class="form-control" id="alarmMessage" rows="2"></textarea>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="alarmDelay" class="form-label">Vertraging (seconden)</label>
+                                <input type="number" class="form-control" id="alarmDelay" value="0" min="0">
+                                <div class="form-text">Alarm activeert na deze periode</div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="alarmHysteresis" class="form-label">Hysteresis</label>
+                                <input type="number" class="form-control" id="alarmHysteresis" value="0" step="0.01">
+                                <div class="form-text">Drempelverschil voor reset</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" id="alarmEnabled" checked>
+                        <label class="form-check-label" for="alarmEnabled">Alarm ingeschakeld</label>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+                <button type="button" class="btn btn-primary" id="saveAlarmBtn">Opslaan</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentAlarmId = null;
+let alarmModal;
+
+document.addEventListener('DOMContentLoaded', function() {
+    alarmModal = new bootstrap.Modal(document.getElementById('alarmModal'));
+    
+    loadAlarms();
+    loadAlarmHistory();
+    loadRegisters();
+    
+    document.getElementById('addAlarmBtn').addEventListener('click', () => {
+        currentAlarmId = null;
+        document.getElementById('alarmForm').reset();
+        document.getElementById('alarmEnabled').checked = true;
+        alarmModal.show();
+    });
+    
+    document.getElementById('saveAlarmBtn').addEventListener('click', saveAlarm);
+    
+    // Auto-refresh history every 10 seconds
+    setInterval(loadAlarmHistory, 10000);
+});
+
+function loadAlarms() {
+    fetchAPI('/api/v1/alarms/')
+        .then(response => response.json())
+        .then(data => {
+            const alarms = data.results || data;
+            const tbody = document.querySelector('#alarmsTable tbody');
+            tbody.innerHTML = '';
+            
+            if (!Array.isArray(alarms) || alarms.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">Geen alarms geconfigureerd</td></tr>';
+                return;
+            }
+            
+            alarms.forEach(alarm => {
+                const statusClass = alarm.enabled ? 'success' : 'secondary';
+                const activeClass = alarm.is_active ? 'danger' : '';
+                
+                tbody.innerHTML += `
+                    <tr class="${activeClass}">
+                        <td>${alarm.name}</td>
+                        <td>${alarm.register_name || alarm.register}</td>
+                        <td>${getConditionText(alarm.condition)}</td>
+                        <td>${alarm.threshold}</td>
+                        <td><span class="badge bg-${getPriorityColor(alarm.priority)}">${alarm.priority}</span></td>
+                        <td>
+                            <span class="badge bg-${statusClass}">${alarm.enabled ? 'Actief' : 'Uit'}</span>
+                            ${alarm.is_active ? '<span class="badge bg-danger ms-1">ALARM!</span>' : ''}
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-outline-secondary" onclick="editAlarm(${alarm.id})">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="deleteAlarm(${alarm.id})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            });
+        })
+        .catch(error => {
+            console.error('Fout bij laden alarms:', error);
+            showNotification('Fout bij laden alarms: ' + error.message, 'danger');
+        });
+}
+
+function loadAlarmHistory() {
+    fetchAPI('/api/v1/alarm-history/?limit=20')
+        .then(response => response.json())
+        .then(data => {
+            const history = data.results || data;
+            const tbody = document.getElementById('historyTable');
+            tbody.innerHTML = '';
+            
+            if (!Array.isArray(history) || history.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">Geen alarm geschiedenis</td></tr>';
+                return;
+            }
+            
+            history.forEach(entry => {
+                const statusClass = entry.status === 'triggered' ? 'danger' : 'success';
+                const time = new Date(entry.triggered_at).toLocaleString('nl-NL');
+                
+                tbody.innerHTML += `
+                    <tr>
+                        <td><small>${time}</small></td>
+                        <td>${entry.alarm_name || entry.alarm}</td>
+                        <td><span class="badge bg-${statusClass}">${entry.status}</span></td>
+                        <td>${entry.value !== null ? entry.value.toFixed(2) : '-'}</td>
+                        <td><small>${entry.message || '-'}</small></td>
+                    </tr>
+                `;
+            });
+        })
+        .catch(error => console.error('Fout bij laden history:', error));
+}
+
+function loadRegisters() {
+    fetchAPI('/api/v1/registers/')
+        .then(response => response.json())
+        .then(data => {
+            const registers = data.results || data;
+            const select = document.getElementById('alarmRegister');
+            select.innerHTML = '<option value="">Selecteer register...</option>';
+            
+            if (Array.isArray(registers)) {
+                registers.forEach(reg => {
+                    select.innerHTML += `<option value="${reg.id}">${reg.name} (${reg.device_name})</option>`;
+                });
+            }
+        });
+}
+
+function saveAlarm() {
+    const data = {
+        name: document.getElementById('alarmName').value,
+        register: parseInt(document.getElementById('alarmRegister').value),
+        condition: document.getElementById('alarmCondition').value,
+        threshold: parseFloat(document.getElementById('alarmThreshold').value),
+        priority: document.getElementById('alarmPriority').value,
+        message: document.getElementById('alarmMessage').value,
+        delay_seconds: parseInt(document.getElementById('alarmDelay').value) || 0,
+        hysteresis: parseFloat(document.getElementById('alarmHysteresis').value) || 0,
+        enabled: document.getElementById('alarmEnabled').checked
+    };
+    
+    const url = currentAlarmId ? `/api/v1/alarms/${currentAlarmId}/` : '/api/v1/alarms/';
+    const method = currentAlarmId ? 'PUT' : 'POST';
+    
+    fetchAPI(url, { method, body: JSON.stringify(data) })
+        .then(() => {
+            alarmModal.hide();
+            showNotification('Alarm opgeslagen', 'success');
+            loadAlarms();
+        })
+        .catch(error => showNotification('Fout: ' + error.message, 'danger'));
+}
+
+function editAlarm(id) {
+    fetchAPI(`/api/v1/alarms/${id}/`)
+        .then(response => response.json())
+        .then(alarm => {
+            currentAlarmId = id;
+            document.getElementById('alarmName').value = alarm.name;
+            document.getElementById('alarmRegister').value = alarm.register;
+            document.getElementById('alarmCondition').value = alarm.condition;
+            document.getElementById('alarmThreshold').value = alarm.threshold;
+            document.getElementById('alarmPriority').value = alarm.priority;
+            document.getElementById('alarmMessage').value = alarm.message || '';
+            document.getElementById('alarmDelay').value = alarm.delay_seconds;
+            document.getElementById('alarmHysteresis').value = alarm.hysteresis;
+            document.getElementById('alarmEnabled').checked = alarm.enabled;
+            alarmModal.show();
+        });
+}
+
+function deleteAlarm(id) {
+    if (!confirm('Weet je zeker dat je dit alarm wilt verwijderen?')) return;
+    
+    fetchAPI(`/api/v1/alarms/${id}/`, { method: 'DELETE' })
+        .then(() => {
+            showNotification('Alarm verwijderd', 'success');
+            loadAlarms();
+        })
+        .catch(error => showNotification('Fout: ' + error.message, 'danger'));
+}
+
+function getConditionText(condition) {
+    const conditions = {
+        'gt': '>', 'gte': '>=', 'lt': '<', 'lte': '<=', 'eq': '=', 'ne': '!='
+    };
+    return conditions[condition] || condition;
+}
+
+function getPriorityColor(priority) {
+    const colors = {
+        'low': 'info',
+        'medium': 'warning',
+        'high': 'danger',
+        'critical': 'dark'
+    };
+    return colors[priority] || 'secondary';
+}
+</script>
+{% endblock %}

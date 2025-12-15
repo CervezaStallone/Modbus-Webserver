@@ -1,0 +1,312 @@
+{% extends 'base.html' %}
+
+{% block title %}Device Templates - Modbus Webserver{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Device Templates</h1>
+        <button class="btn btn-primary" id="addTemplateBtn">
+            <i class="bi bi-plus-circle"></i> Template Toevoegen
+        </button>
+    </div>
+
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> Templates maken het eenvoudig om devices met voorgedefinieerde registers toe te voegen.
+    </div>
+
+    <div class="row" id="templatesGrid">
+        <!-- Templates will be loaded here -->
+    </div>
+</div>
+
+<!-- Add/Edit Template Modal -->
+<div class="modal fade" id="templateModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Device Template</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="templateForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="templateName" class="form-label">Naam *</label>
+                                <input type="text" class="form-control" id="templateName" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="templateManufacturer" class="form-label">Fabrikant</label>
+                                <input type="text" class="form-control" id="templateManufacturer">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="templateModel" class="form-label">Model</label>
+                                <input type="text" class="form-control" id="templateModel">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="templateCategory" class="form-label">Categorie</label>
+                                <select class="form-select" id="templateCategory">
+                                    <option value="">Selecteer categorie...</option>
+                                    <option value="plc">PLC</option>
+                                    <option value="sensor">Sensor</option>
+                                    <option value="meter">Meter</option>
+                                    <option value="drive">Frequency Drive</option>
+                                    <option value="other">Overig</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="templateDescription" class="form-label">Beschrijving</label>
+                        <textarea class="form-control" id="templateDescription" rows="3"></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="templateRegisters" class="form-label">Register Configuratie (JSON)</label>
+                        <textarea class="form-control font-monospace" id="templateRegisters" rows="10" required></textarea>
+                        <div class="form-text">
+                            Voorbeeld:
+<pre class="small">[
+  {
+    "name": "Temperatuur",
+    "address": 0,
+    "register_type": "HOLDING_REGISTER",
+    "data_type": "FLOAT32",
+    "unit": "°C",
+    "scaling_factor": 1,
+    "offset": 0
+  }
+]</pre>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+                <button type="button" class="btn btn-primary" id="saveTemplateBtn">Opslaan</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Apply Template Modal -->
+<div class="modal fade" id="applyModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Template Toepassen</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Selecteer het device waarop je deze template wilt toepassen:</p>
+                <div class="mb-3">
+                    <label for="applyDevice" class="form-label">Device *</label>
+                    <select class="form-select" id="applyDevice" required>
+                        <option value="">Selecteer device...</option>
+                    </select>
+                </div>
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i> Dit zal registers toevoegen aan het geselecteerde device.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+                <button type="button" class="btn btn-primary" id="applyTemplateBtn">Toepassen</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentTemplateId = null;
+let applyTemplateId = null;
+let templateModal, applyModal;
+
+document.addEventListener('DOMContentLoaded', function() {
+    templateModal = new bootstrap.Modal(document.getElementById('templateModal'));
+    applyModal = new bootstrap.Modal(document.getElementById('applyModal'));
+    
+    loadTemplates();
+    loadDevices();
+    
+    document.getElementById('addTemplateBtn').addEventListener('click', () => {
+        currentTemplateId = null;
+        document.getElementById('templateForm').reset();
+        document.getElementById('templateRegisters').value = '[]';
+        templateModal.show();
+    });
+    
+    document.getElementById('saveTemplateBtn').addEventListener('click', saveTemplate);
+    document.getElementById('applyTemplateBtn').addEventListener('click', applyTemplate);
+});
+
+function loadTemplates() {
+    fetchAPI('/api/v1/device-templates/')
+        .then(response => response.json())
+        .then(data => {
+            const templates = data.results || data;
+            const container = document.getElementById('templatesGrid');
+            container.innerHTML = '';
+            
+            if (!Array.isArray(templates) || templates.length === 0) {
+                container.innerHTML = '<div class="col-12"><p class="text-muted">Nog geen templates aangemaakt.</p></div>';
+                return;
+            }
+            
+            templates.forEach(template => {
+                container.innerHTML += createTemplateCard(template);
+            });
+        })
+        .catch(error => {
+            console.error('Fout bij laden templates:', error);
+            showNotification('Fout bij laden templates: ' + error.message, 'danger');
+        });
+}
+
+function createTemplateCard(template) {
+    const registerCount = template.register_config ? template.register_config.length : 0;
+    const categoryBadge = template.category ? `<span class="badge bg-secondary">${template.category}</span>` : '';
+    
+    return `
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <h5 class="card-title">${template.name} ${categoryBadge}</h5>
+                    ${template.manufacturer ? `<p class="card-text"><small class="text-muted">${template.manufacturer}${template.model ? ' - ' + template.model : ''}</small></p>` : ''}
+                    <p class="card-text">${template.description || 'Geen beschrijving'}</p>
+                    <p class="card-text"><small class="text-muted"><i class="bi bi-list-ul"></i> ${registerCount} registers</small></p>
+                </div>
+                <div class="card-footer">
+                    <div class="btn-group btn-group-sm w-100">
+                        <button class="btn btn-success" onclick="showApplyModal(${template.id})">
+                            <i class="bi bi-play"></i> Toepassen
+                        </button>
+                        <button class="btn btn-outline-secondary" onclick="editTemplate(${template.id})">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="deleteTemplate(${template.id})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function loadDevices() {
+    fetchAPI('/api/v1/devices/')
+        .then(response => response.json())
+        .then(data => {
+            const devices = data.results || data;
+            const select = document.getElementById('applyDevice');
+            select.innerHTML = '<option value="">Selecteer device...</option>';
+            
+            if (Array.isArray(devices)) {
+                devices.forEach(device => {
+                    select.innerHTML += `<option value="${device.id}">${device.name}</option>`;
+                });
+            }
+        });
+}
+
+function saveTemplate() {
+    try {
+        const registerConfig = JSON.parse(document.getElementById('templateRegisters').value);
+        
+        if (!Array.isArray(registerConfig)) {
+            throw new Error('Register configuratie moet een array zijn');
+        }
+        
+        const data = {
+            name: document.getElementById('templateName').value,
+            manufacturer: document.getElementById('templateManufacturer').value,
+            model: document.getElementById('templateModel').value,
+            category: document.getElementById('templateCategory').value,
+            description: document.getElementById('templateDescription').value,
+            register_config: registerConfig
+        };
+        
+        const url = currentTemplateId ? `/api/v1/device-templates/${currentTemplateId}/` : '/api/v1/device-templates/';
+        const method = currentTemplateId ? 'PUT' : 'POST';
+        
+        fetchAPI(url, { method, body: JSON.stringify(data) })
+            .then(() => {
+                templateModal.hide();
+                showNotification('Template opgeslagen', 'success');
+                loadTemplates();
+            })
+            .catch(error => showNotification('Fout: ' + error.message, 'danger'));
+    } catch (error) {
+        showNotification('Ongeldige JSON: ' + error.message, 'danger');
+    }
+}
+
+function editTemplate(id) {
+    fetchAPI(`/api/v1/device-templates/${id}/`)
+        .then(response => response.json())
+        .then(template => {
+            currentTemplateId = id;
+            document.getElementById('templateName').value = template.name;
+            document.getElementById('templateManufacturer').value = template.manufacturer || '';
+            document.getElementById('templateModel').value = template.model || '';
+            document.getElementById('templateCategory').value = template.category || '';
+            document.getElementById('templateDescription').value = template.description || '';
+            document.getElementById('templateRegisters').value = JSON.stringify(template.register_config, null, 2);
+            templateModal.show();
+        });
+}
+
+function deleteTemplate(id) {
+    if (!confirm('Weet je zeker dat je deze template wilt verwijderen?')) return;
+    
+    fetchAPI(`/api/v1/device-templates/${id}/`, { method: 'DELETE' })
+        .then(() => {
+            showNotification('Template verwijderd', 'success');
+            loadTemplates();
+        })
+        .catch(error => showNotification('Fout: ' + error.message, 'danger'));
+}
+
+function showApplyModal(templateId) {
+    applyTemplateId = templateId;
+    document.getElementById('applyDevice').value = '';
+    applyModal.show();
+}
+
+function applyTemplate() {
+    const deviceId = document.getElementById('applyDevice').value;
+    
+    if (!deviceId) {
+        showNotification('Selecteer een device', 'warning');
+        return;
+    }
+    
+    fetchAPI(`/api/v1/device-templates/${applyTemplateId}/apply_to_device/`, {
+        method: 'POST',
+        body: JSON.stringify({ device_id: parseInt(deviceId) })
+    })
+    .then(response => response.json())
+    .then(data => {
+        applyModal.hide();
+        showNotification(`${data.registers_created} registers toegevoegd aan device`, 'success');
+    })
+    .catch(error => {
+        showNotification('Fout bij toepassen template: ' + error.message, 'danger');
+    });
+}
+</script>
+{% endblock %}

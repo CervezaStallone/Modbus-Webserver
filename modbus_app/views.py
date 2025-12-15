@@ -54,6 +54,87 @@ def register_list_view(request):
     return render(request, 'config/registers.html')
 
 
+@login_required
+def interface_add_view(request):
+    """Add new interface view."""
+    return render(request, 'config/interface_form.html', {
+        'title': 'Interface Toevoegen',
+        'action': 'add'
+    })
+
+
+@login_required
+def interface_edit_view(request, pk):
+    """Edit interface view."""
+    return render(request, 'config/interface_form.html', {
+        'title': 'Interface Bewerken',
+        'action': 'edit',
+        'interface_id': pk
+    })
+
+
+@login_required
+def device_add_view(request):
+    """Add new device view."""
+    return render(request, 'config/device_form.html', {
+        'title': 'Device Toevoegen',
+        'action': 'add'
+    })
+
+
+@login_required
+def device_edit_view(request, pk):
+    """Edit device view."""
+    return render(request, 'config/device_form.html', {
+        'title': 'Device Bewerken',
+        'action': 'edit',
+        'device_id': pk
+    })
+
+
+@login_required
+def register_add_view(request):
+    """Add new register view."""
+    return render(request, 'config/register_form.html', {
+        'title': 'Register Toevoegen',
+        'action': 'add'
+    })
+
+
+@login_required
+def register_edit_view(request, pk):
+    """Edit register view."""
+    return render(request, 'config/register_form.html', {
+        'title': 'Register Bewerken',
+        'action': 'edit',
+        'register_id': pk
+    })
+
+
+@login_required
+def dashboard_layout_view(request):
+    """Dashboard layout configuration view."""
+    return render(request, 'config/dashboard_layout.html', {
+        'title': 'Dashboard Layout'
+    })
+
+
+@login_required
+def alarm_list_view(request):
+    """Alarm configuration list view."""
+    return render(request, 'config/alarms.html', {
+        'title': 'Alarm Configuratie'
+    })
+
+
+@login_required
+def template_list_view(request):
+    """Device template list view."""
+    return render(request, 'config/templates.html', {
+        'title': 'Device Templates'
+    })
+
+
 # API ViewSets
 class ModbusInterfaceViewSet(viewsets.ModelViewSet):
     """ViewSet voor Modbus interfaces."""
@@ -222,11 +303,18 @@ class RegisterViewSet(viewsets.ModelViewSet):
         register_service = RegisterService()
         
         try:
-            value = register_service.read_register(register)
+            raw_value, converted_value = register_service.read_register(register)
+            
+            if raw_value is None:
+                return Response({
+                    'status': 'error',
+                    'message': 'Kon register niet lezen'
+                }, status=status.HTTP_400_BAD_REQUEST)
             
             return Response({
                 'status': 'success',
-                'value': value,
+                'raw_value': raw_value,
+                'value': converted_value,
                 'unit': register.unit,
                 'timestamp': timezone.now()
             })
@@ -241,7 +329,7 @@ class RegisterViewSet(viewsets.ModelViewSet):
         """Schrijf waarde naar dit register."""
         register = self.get_object()
         
-        if not register.is_writable():
+        if not register.is_writable:
             return Response({
                 'status': 'error',
                 'message': 'Dit register is niet schrijfbaar'
@@ -346,7 +434,7 @@ class DashboardGroupViewSet(viewsets.ModelViewSet):
 
 class DashboardWidgetViewSet(viewsets.ModelViewSet):
     """ViewSet voor Dashboard widgets."""
-    queryset = DashboardWidget.objects.select_related('group', 'register', 'calculated_register').all()
+    queryset = DashboardWidget.objects.select_related('group', 'register').all()
     serializer_class = DashboardWidgetSerializer
     permission_classes = [IsAuthenticated]
     
@@ -463,12 +551,13 @@ class CalculatedRegisterViewSet(viewsets.ModelViewSet):
         # Importeer hier om circular import te voorkomen
         from .tasks import update_calculated_registers
         
-        # Voer berekening uit
-        task = update_calculated_registers.delay(calc_register.id)
+        # Voer berekening uit voor alle calculated registers
+        # (task accepteert geen parameters en verwerkt alles)
+        task = update_calculated_registers.delay()
         
         return Response({
             'status': 'success',
-            'message': f'Berekening gestart voor {calc_register.name}',
+            'message': f'Berekening gestart voor alle calculated registers (inclusief {calc_register.name})',
             'task_id': task.id
         })
 

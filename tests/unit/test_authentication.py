@@ -44,23 +44,19 @@ class TestAuthenticationRequired:
 class TestAuthenticatedAccess:
     """Test authenticated user access."""
     
-    def test_authenticated_user_can_read(self):
+    def test_authenticated_user_can_read(self, test_user):
         """Test that authenticated users can read API data."""
-        # Create user and authenticate
-        user = User.objects.create_user(username='testuser', password='testpass123')
         client = APIClient()
-        client.force_authenticate(user=user)
+        client.force_authenticate(user=test_user)
         
         # Should be able to read data
         response = client.get('/api/v1/interfaces/')
         assert response.status_code == status.HTTP_200_OK
     
-    def test_authenticated_user_cannot_write(self):
+    def test_authenticated_user_cannot_write(self, test_user):
         """Test that regular authenticated users cannot write data."""
-        # Create regular user
-        user = User.objects.create_user(username='testuser', password='testpass123')
         client = APIClient()
-        client.force_authenticate(user=user)
+        client.force_authenticate(user=test_user)
         
         # Try to create an interface
         response = client.post('/api/v1/interfaces/', {
@@ -72,11 +68,9 @@ class TestAuthenticatedAccess:
         })
         assert response.status_code in [status.HTTP_403_FORBIDDEN, status.HTTP_401_UNAUTHORIZED]
     
-    def test_token_authentication_works(self):
+    def test_token_authentication_works(self, test_user):
         """Test that token authentication works."""
-        # Create user and token
-        user = User.objects.create_user(username='testuser', password='testpass123')
-        token = Token.objects.create(user=user)
+        token = Token.objects.create(user=test_user)
         
         # Authenticate with token
         client = APIClient()
@@ -90,36 +84,24 @@ class TestAuthenticatedAccess:
 class TestAdminAccess:
     """Test admin user access."""
     
-    def test_admin_can_read(self):
+    def test_admin_can_read(self, admin_user):
         """Test that admin users can read API data."""
-        # Create admin user
-        admin = User.objects.create_superuser(
-            username='admin', 
-            password='admin123',
-            email='admin@example.com'
-        )
         client = APIClient()
-        client.force_authenticate(user=admin)
+        client.force_authenticate(user=admin_user)
         
         # Should be able to read data
         response = client.get('/api/v1/interfaces/')
         assert response.status_code == status.HTTP_200_OK
     
-    def test_admin_can_write(self):
+    def test_admin_can_write(self, admin_user):
         """Test that admin users can write data."""
-        # Create admin user
-        admin = User.objects.create_superuser(
-            username='admin', 
-            password='admin123',
-            email='admin@example.com'
-        )
         client = APIClient()
-        client.force_authenticate(user=admin)
+        client.force_authenticate(user=admin_user)
         
         # Should be able to create interface
         response = client.post('/api/v1/interfaces/', {
             'name': 'Test Interface',
-            'interface_type': 'RTU',
+            'protocol': 'RTU',
             'port': 'COM1',
             'baudrate': 9600,
             'parity': 'N',
@@ -129,26 +111,21 @@ class TestAdminAccess:
         })
         assert response.status_code in [status.HTTP_201_CREATED, status.HTTP_200_OK]
     
-    def test_admin_can_delete(self):
+    def test_admin_can_delete(self, admin_user):
         """Test that admin users can delete data."""
         from modbus_app.models import ModbusInterface
         
-        # Create admin user and interface
-        admin = User.objects.create_superuser(
-            username='admin', 
-            password='admin123',
-            email='admin@example.com'
-        )
+        # Create interface
         interface = ModbusInterface.objects.create(
             name='Test Interface',
-            interface_type='RTU',
+            protocol='RTU',
             port='COM1',
             baudrate=9600,
             enabled=True
         )
         
         client = APIClient()
-        client.force_authenticate(user=admin)
+        client.force_authenticate(user=admin_user)
         
         # Should be able to delete
         response = client.delete(f'/api/v1/interfaces/{interface.id}/')
@@ -158,40 +135,32 @@ class TestAdminAccess:
 class TestPermissionEdgeCases:
     """Test edge cases in permission checking."""
     
-    def test_audit_log_requires_admin(self):
+    def test_audit_log_requires_admin(self, test_user):
         """Test that audit log access requires admin privileges."""
-        # Create regular user
-        user = User.objects.create_user(username='testuser', password='testpass123')
         client = APIClient()
-        client.force_authenticate(user=user)
+        client.force_authenticate(user=test_user)
         
         # Should not be able to access audit logs
         response = client.get('/api/v1/audit-logs/')
         assert response.status_code in [status.HTTP_403_FORBIDDEN, status.HTTP_401_UNAUTHORIZED]
     
-    def test_admin_can_access_audit_logs(self):
+    def test_admin_can_access_audit_logs(self, admin_user):
         """Test that admins can access audit logs."""
-        # Create admin user
-        admin = User.objects.create_superuser(
-            username='admin', 
-            password='admin123',
-            email='admin@example.com'
-        )
         client = APIClient()
-        client.force_authenticate(user=admin)
+        client.force_authenticate(user=admin_user)
         
         # Should be able to access audit logs
         response = client.get('/api/v1/audit-logs/')
         assert response.status_code == status.HTTP_200_OK
     
-    def test_write_register_requires_admin(self):
+    def test_write_register_requires_admin(self, test_user):
         """Test that register write operations require admin."""
         from modbus_app.models import ModbusInterface, Device, Register
         
         # Create test data
         interface = ModbusInterface.objects.create(
             name='Test Interface',
-            interface_type='RTU',
+            protocol='RTU',
             port='COM1',
             baudrate=9600
         )
@@ -208,10 +177,8 @@ class TestPermissionEdgeCases:
             writable=True
         )
         
-        # Create regular user
-        user = User.objects.create_user(username='testuser', password='testpass123')
         client = APIClient()
-        client.force_authenticate(user=user)
+        client.force_authenticate(user=test_user)
         
         # Should not be able to write
         response = client.post(

@@ -1,0 +1,322 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Modbus Webserver{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>{{ title }}</h1>
+        <a href="{% url 'modbus_app:interface_list' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Terug
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form id="interfaceForm">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">
+                                Naam *
+                                <i class="bi bi-question-circle text-muted" data-bs-toggle="tooltip" 
+                                   title="Unieke naam voor deze interface, bijv. 'RTU Productielijn' of 'TCP Ketelverbinding'."></i>
+                            </label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="protocol" class="form-label">
+                                Protocol *
+                                <i class="bi bi-question-circle text-muted" data-bs-toggle="tooltip" 
+                                   title="RTU voor seriële verbinding (RS485/RS232), TCP voor netwerk (Ethernet/WiFi)."></i>
+                            </label>
+                            <select class="form-select" id="protocol" name="protocol" required>
+                                <option value="">Selecteer protocol...</option>
+                                <option value="RTU">Modbus RTU (Serieel)</option>
+                                <option value="TCP">Modbus TCP (Ethernet)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RTU Settings -->
+                <div id="rtuSettings" style="display: none;">
+                    <h5 class="mt-3 mb-3">RTU Instellingen</h5>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="port" class="form-label">
+                                    Poort *
+                                    <i class="bi bi-question-circle text-muted" data-bs-toggle="tooltip" 
+                                       title="Seriële poort. Linux: /dev/ttyUSB0, /dev/ttyS0. Windows: COM1, COM3."></i>
+                                </label>
+                                <input type="text" class="form-control" id="port" name="port" 
+                                       placeholder="/dev/ttyUSB0">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="baudrate" class="form-label">
+                                    Baudrate *
+                                    <i class="bi bi-question-circle text-muted" data-bs-toggle="tooltip" 
+                                       title="Communicatiesnelheid. Moet overeenkomen met device. Meest gebruikt: 9600, 19200."></i>
+                                </label>
+                                <select class="form-select" id="baudrate" name="baudrate">
+                                    <option value="9600">9600</option>
+                                    <option value="19200">19200</option>
+                                    <option value="38400">38400</option>
+                                    <option value="57600">57600</option>
+                                    <option value="115200">115200</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="parity" class="form-label">Pariteit *</label>
+                                <select class="form-select" id="parity" name="parity">
+                                    <option value="N">None</option>
+                                    <option value="E">Even</option>
+                                    <option value="O">Odd</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="stopbits" class="form-label">Stopbits *</label>
+                                <select class="form-select" id="stopbits" name="stopbits">
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="bytesize" class="form-label">Bytesize *</label>
+                                <select class="form-select" id="bytesize" name="bytesize">
+                                    <option value="7">7</option>
+                                    <option value="8" selected>8</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- TCP Settings -->
+                <div id="tcpSettings" style="display: none;">
+                    <h5 class="mt-3 mb-3">TCP Instellingen</h5>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="host" class="form-label">
+                                    IP Adres / Hostname *
+                                    <i class="bi bi-question-circle text-muted" data-bs-toggle="tooltip" 
+                                       title="IP adres (bijv. 192.168.1.100) of hostname van het Modbus TCP device."></i>
+                                </label>
+                                <input type="text" class="form-control" id="host" name="host" 
+                                       placeholder="bijv. 192.168.1.100">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="tcp_port" class="form-label">
+                                    Poort
+                                    <i class="bi bi-question-circle text-muted" data-bs-toggle="tooltip" 
+                                       title="TCP poort nummer. Standaard Modbus TCP poort is 502."></i>
+                                </label>
+                                <input type="number" class="form-control" id="tcp_port" name="tcp_port" 
+                                       value="502" min="1" max="65535">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="timeout" class="form-label">Timeout (seconden)</label>
+                            <input type="number" class="form-control" id="timeout" name="timeout" 
+                                   value="3" min="1" step="0.1">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="description" class="form-label">Beschrijving</label>
+                    <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Opslaan
+                    </button>
+                    <a href="{% url 'modbus_app:interface_list' %}" class="btn btn-secondary">
+                        Annuleren
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Utility functions
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function showNotification(message, type = 'info') {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3`;
+    alertDiv.style.zIndex = '9999';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+    setTimeout(() => alertDiv.remove(), 5000);
+}
+
+const csrftoken = getCookie('csrftoken');
+
+function fetchAPI(url, options = {}) {
+    const defaultOptions = {
+        credentials: 'same-origin',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    };
+    
+    if (options.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method)) {
+        defaultOptions.headers['X-CSRFToken'] = csrftoken;
+    }
+    
+    return fetch(url, { ...defaultOptions, ...options, headers: { ...defaultOptions.headers, ...options.headers } });
+}
+
+const interfaceId = {{ interface_id|default:"null" }};
+const action = "{{ action }}";
+
+// Initialize Bootstrap tooltips
+const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl);
+});
+
+// Toggle protocol-specific settings
+document.getElementById('protocol').addEventListener('change', function() {
+    const protocol = this.value;
+    document.getElementById('rtuSettings').style.display = protocol === 'RTU' ? 'block' : 'none';
+    document.getElementById('tcpSettings').style.display = protocol === 'TCP' ? 'block' : 'none';
+});
+
+// Load interface data for edit mode
+function loadInterface() {
+    if (action === 'edit' && interfaceId) {
+        fetchAPI(`/api/v1/interfaces/${interfaceId}/`)
+            .then(response => response.json())
+            .then(iface => {
+                document.getElementById('name').value = iface.name;
+                document.getElementById('protocol').value = iface.protocol;
+                document.getElementById('protocol').dispatchEvent(new Event('change'));
+                
+                if (iface.protocol === 'RTU') {
+                    document.getElementById('port').value = iface.port || '';
+                    document.getElementById('baudrate').value = iface.baudrate || 9600;
+                    document.getElementById('parity').value = iface.parity || 'N';
+                    document.getElementById('stopbits').value = iface.stopbits || 1;
+                    document.getElementById('bytesize').value = iface.bytesize || 8;
+                } else {
+                    document.getElementById('host').value = iface.host || '';
+                    document.getElementById('tcp_port').value = iface.tcp_port || 502;
+                }
+                
+                document.getElementById('timeout').value = iface.timeout || 3;
+                document.getElementById('description').value = iface.description || '';
+            })
+            .catch(error => {
+                console.error('Fout bij laden interface:', error);
+                showNotification('Fout bij laden interface: ' + error.message, 'danger');
+            });
+    }
+}
+
+// Handle form submission
+document.getElementById('interfaceForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const protocol = document.getElementById('protocol').value;
+    const formData = {
+        name: document.getElementById('name').value,
+        protocol: protocol,
+        timeout: parseFloat(document.getElementById('timeout').value),
+        description: document.getElementById('description').value
+    };
+    
+    if (protocol === 'RTU') {
+        formData.port = document.getElementById('port').value;
+        formData.baudrate = parseInt(document.getElementById('baudrate').value);
+        formData.parity = document.getElementById('parity').value;
+        formData.stopbits = parseInt(document.getElementById('stopbits').value);
+        formData.bytesize = parseInt(document.getElementById('bytesize').value);
+    } else {
+        formData.host = document.getElementById('host').value;
+        formData.tcp_port = parseInt(document.getElementById('tcp_port').value);
+    }
+    
+    const url = action === 'edit' ? `/api/v1/interfaces/${interfaceId}/` : '/api/v1/interfaces/';
+    const method = action === 'edit' ? 'PUT' : 'POST';
+    
+    fetchAPI(url, {
+        method: method,
+        body: JSON.stringify(formData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => {
+                throw new Error(JSON.stringify(err));
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        showNotification(`Interface succesvol ${action === 'edit' ? 'bijgewerkt' : 'toegevoegd'}`, 'success');
+        setTimeout(() => {
+            window.location.href = "{% url 'modbus_app:interface_list' %}";
+        }, 1000);
+    })
+    .catch(error => {
+        console.error('Fout bij opslaan interface:', error);
+        let errorMsg = 'Fout bij opslaan interface';
+        try {
+            const errorObj = JSON.parse(error.message);
+            errorMsg = Object.entries(errorObj).map(([key, val]) => `${key}: ${val}`).join(', ');
+        } catch(e) {
+            errorMsg = error.message;
+        }
+        showNotification(errorMsg, 'danger');
+    });
+});
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    loadInterface();
+});
+</script>
+{% endblock %}

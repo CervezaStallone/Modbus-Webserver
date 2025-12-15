@@ -16,23 +16,31 @@ def broadcast_register_update(register_id, value, timestamp, unit=''):
         timestamp: Timestamp of the measurement
         unit: Unit of measurement
     """
-    channel_layer = get_channel_layer()
-    
-    data = {
-        'type': 'register_update',
-        'register_id': register_id,
-        'value': value,
-        'timestamp': timestamp.isoformat() if hasattr(timestamp, 'isoformat') else str(timestamp),
-        'unit': unit,
-    }
-    
-    async_to_sync(channel_layer.group_send)(
-        'dashboard',
-        {
-            'type': 'register.update',
-            'data': data,
+    try:
+        channel_layer = get_channel_layer()
+        
+        if channel_layer is None:
+            return
+        
+        data = {
+            'type': 'register_update',
+            'register_id': register_id,
+            'value': value,
+            'timestamp': timestamp.isoformat() if hasattr(timestamp, 'isoformat') else str(timestamp),
+            'unit': unit,
         }
-    )
+        
+        async_to_sync(channel_layer.group_send)(
+            'dashboard',
+            {
+                'type': 'register.update',
+                'data': data,
+            }
+        )
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error broadcasting register update for register {register_id}: {e}")
 
 
 def broadcast_device_update(device_id, status, error_message=''):
@@ -44,31 +52,39 @@ def broadcast_device_update(device_id, status, error_message=''):
         status: Connection status (online/offline/error)
         error_message: Optional error message
     """
-    channel_layer = get_channel_layer()
-    
-    data = {
-        'type': 'device_update',
-        'device_id': device_id,
-        'status': status,
-        'error_message': error_message,
-    }
-    
-    async_to_sync(channel_layer.group_send)(
-        f'device_{device_id}',
-        {
-            'type': 'device.update',
-            'data': data,
+    try:
+        channel_layer = get_channel_layer()
+        
+        if channel_layer is None:
+            return
+        
+        data = {
+            'type': 'device_update',
+            'device_id': device_id,
+            'status': status,
+            'error_message': error_message,
         }
-    )
-    
-    # Also send to dashboard
-    async_to_sync(channel_layer.group_send)(
-        'dashboard',
-        {
-            'type': 'register.update',
-            'data': data,
-        }
-    )
+        
+        async_to_sync(channel_layer.group_send)(
+            f'device_{device_id}',
+            {
+                'type': 'device.update',
+                'data': data,
+            }
+        )
+        
+        # Also send to dashboard
+        async_to_sync(channel_layer.group_send)(
+            'dashboard',
+            {
+                'type': 'register.update',
+                'data': data,
+            }
+        )
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error broadcasting device update for device {device_id}: {e}")
 
 
 def broadcast_alarm(alarm_id, event_type, register_name, value, message, severity):
@@ -83,34 +99,42 @@ def broadcast_alarm(alarm_id, event_type, register_name, value, message, severit
         message: Alarm message
         severity: Alarm severity
     """
-    channel_layer = get_channel_layer()
-    
-    data = {
-        'type': 'alarm_event',
-        'alarm_id': alarm_id,
-        'event_type': event_type,
-        'register_name': register_name,
-        'value': value,
-        'message': message,
-        'severity': severity,
-    }
-    
-    async_to_sync(channel_layer.group_send)(
-        'alarms',
-        {
-            'type': 'alarm.event',
-            'data': data,
+    try:
+        channel_layer = get_channel_layer()
+        
+        if channel_layer is None:
+            return
+        
+        data = {
+            'type': 'alarm_event',
+            'alarm_id': alarm_id,
+            'event_type': event_type,
+            'register_name': register_name,
+            'value': value,
+            'message': message,
+            'severity': severity,
         }
-    )
-    
-    # Also send to dashboard
-    async_to_sync(channel_layer.group_send)(
-        'dashboard',
-        {
-            'type': 'register.update',
-            'data': data,
-        }
-    )
+        
+        async_to_sync(channel_layer.group_send)(
+            'alarms',
+            {
+                'type': 'alarm.event',
+                'data': data,
+            }
+        )
+        
+        # Also send to dashboard
+        async_to_sync(channel_layer.group_send)(
+            'dashboard',
+            {
+                'type': 'register.update',
+                'data': data,
+            }
+        )
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error broadcasting alarm for alarm {alarm_id}: {e}")
 
 
 def broadcast_connection_status(interface_id, status):
@@ -121,18 +145,26 @@ def broadcast_connection_status(interface_id, status):
         interface_id: ID of the interface
         status: Connection status
     """
-    channel_layer = get_channel_layer()
-    
-    data = {
-        'type': 'interface_status',
-        'interface_id': interface_id,
-        'status': status,
-    }
-    
-    async_to_sync(channel_layer.group_send)(
-        'dashboard',
-        {
-            'type': 'register.update',
-            'data': data,
+    try:
+        channel_layer = get_channel_layer()
+        
+        if channel_layer is None:
+            return
+        
+        data = {
+            'type': 'interface_status',
+            'interface_id': interface_id,
+            'status': status,
         }
-    )
+        
+        async_to_sync(channel_layer.group_send)(
+            'dashboard',
+            {
+                'type': 'register.update',
+                'data': data,
+            }
+        )
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Error broadcasting connection status for interface {interface_id}: {e}")

@@ -7,9 +7,17 @@
 {% block content %}
 <div class="row mb-4">
     <div class="col-12">
-        <div class="alert alert-info">
+        {% if not user.is_authenticated %}
+        <div class="alert alert-warning">
+            <h5>⚠️ Niet ingelogd</h5>
+            <p>Je bent momenteel niet ingelogd. <a href="/admin/login/?next=/" class="alert-link">Klik hier om in te loggen</a>.</p>
+            <p class="mb-0"><small>Zonder inloggen kun je geen configuraties wijzigen of data bekijken.</small></p>
+        </div>
+        {% else %}
+        <div class="alert alert-info" id="websocket-status">
             Dashboard wordt geladen... WebSocket verbinding wordt opgezet.
         </div>
+        {% endif %}
     </div>
 </div>
 

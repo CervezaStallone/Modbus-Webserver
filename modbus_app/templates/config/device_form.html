@@ -1,0 +1,252 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Modbus Webserver{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>{{ title }}</h1>
+        <a href="{% url 'modbus_app:device_list' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Terug
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form id="deviceForm">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">
+                                Naam *
+                                <i class="bi bi-question-circle text-muted" data-bs-toggle="tooltip" 
+                                   title="Herkenbare naam voor dit device, bijv. 'PLC Hal 1' of 'Temperatuursensor Ketel'."></i>
+                            </label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="interface" class="form-label">
+                                Interface *
+                                <i class="bi bi-question-circle text-muted" data-bs-toggle="tooltip" 
+                                   title="De Modbus interface (RTU of TCP) waarop dit device is aangesloten."></i>
+                            </label>
+                            <select class="form-select" id="interface" name="interface" required>
+                                <option value="">Selecteer interface...</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="slave_id" class="form-label">
+                                Slave ID *
+                                <i class="bi bi-question-circle text-muted" data-bs-toggle="tooltip" 
+                                   title="Uniek Modbus slave adres van dit device (1-247). Staat vaak in de manual of device configuratie."></i>
+                            </label>
+                            <input type="number" class="form-control" id="slave_id" name="slave_id" 
+                                   min="1" max="247" required>
+                            <div class="form-text">Modbus slave ID (1-247)</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="polling_interval" class="form-label">
+                                Polling Interval (seconden) *
+                                <i class="bi bi-question-circle text-muted" data-bs-toggle="tooltip" 
+                                   title="Hoe vaak de registers worden uitgelezen. Lagere waarde = snellere updates maar meer belasting."></i>
+                            </label>
+                            <input type="number" class="form-control" id="polling_interval" name="polling_interval" 
+                                   min="1" value="5" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="description" class="form-label">
+                        Beschrijving
+                        <i class="bi bi-question-circle text-muted" data-bs-toggle="tooltip" 
+                           title="Optionele beschrijving: locatie, functie, notities, etc."></i>
+                    </label>
+                    <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                </div>
+
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="enabled" name="enabled" checked>
+                    <label class="form-check-label" for="enabled">
+                        Device ingeschakeld
+                        <i class="bi bi-question-circle text-muted" data-bs-toggle="tooltip" 
+                           title="Uitgeschakelde devices worden niet gepolld. Gebruik dit om tijdelijk devices uit te schakelen."></i>
+                    </label>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Opslaan
+                    </button>
+                    <a href="{% url 'modbus_app:device_list' %}" class="btn btn-secondary">
+                        Annuleren
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Utility functions
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function showNotification(message, type = 'info') {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3`;
+    alertDiv.style.zIndex = '9999';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+    setTimeout(() => alertDiv.remove(), 5000);
+}
+
+const csrftoken = getCookie('csrftoken');
+
+function fetchAPI(url, options = {}) {
+    const defaultOptions = {
+        credentials: 'same-origin',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    };
+    
+    if (options.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method)) {
+        defaultOptions.headers['X-CSRFToken'] = csrftoken;
+    }
+    
+    return fetch(url, { ...defaultOptions, ...options, headers: { ...defaultOptions.headers, ...options.headers } });
+}
+
+const deviceId = {{ device_id|default:"null" }};
+const action = "{{ action }}";
+
+// Load interfaces for dropdown
+function loadInterfaces() {
+    fetchAPI('/api/v1/interfaces/')
+        .then(response => response.json())
+        .then(data => {
+            let interfaces = data.results || data;
+            const select = document.getElementById('interface');
+            
+            if (Array.isArray(interfaces)) {
+                interfaces.forEach(iface => {
+                    const option = document.createElement('option');
+                    option.value = iface.id;
+                    option.textContent = `${iface.name} (${iface.protocol_display})`;
+                    select.appendChild(option);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Fout bij laden interfaces:', error);
+            showNotification('Fout bij laden interfaces: ' + error.message, 'danger');
+        });
+}
+
+// Load device data for edit mode
+function loadDevice() {
+    if (action === 'edit' && deviceId) {
+        fetchAPI(`/api/v1/devices/${deviceId}/`)
+            .then(response => response.json())
+            .then(device => {
+                document.getElementById('name').value = device.name;
+                document.getElementById('interface').value = device.interface;
+                document.getElementById('slave_id').value = device.slave_id;
+                document.getElementById('polling_interval').value = device.polling_interval;
+                document.getElementById('description').value = device.description || '';
+                document.getElementById('enabled').checked = device.enabled;
+            })
+            .catch(error => {
+                console.error('Fout bij laden device:', error);
+                showNotification('Fout bij laden device: ' + error.message, 'danger');
+            });
+    }
+}
+
+// Handle form submission
+document.getElementById('deviceForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        name: document.getElementById('name').value,
+        interface: parseInt(document.getElementById('interface').value),
+        slave_id: parseInt(document.getElementById('slave_id').value),
+        polling_interval: parseInt(document.getElementById('polling_interval').value),
+        description: document.getElementById('description').value,
+        enabled: document.getElementById('enabled').checked
+    };
+    
+    const url = action === 'edit' ? `/api/v1/devices/${deviceId}/` : '/api/v1/devices/';
+    const method = action === 'edit' ? 'PUT' : 'POST';
+    
+    fetchAPI(url, {
+        method: method,
+        body: JSON.stringify(formData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => {
+                throw new Error(JSON.stringify(err));
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        showNotification(`Device succesvol ${action === 'edit' ? 'bijgewerkt' : 'toegevoegd'}`, 'success');
+        setTimeout(() => {
+            window.location.href = "{% url 'modbus_app:device_list' %}";
+        }, 1000);
+    })
+    .catch(error => {
+        console.error('Fout bij opslaan device:', error);
+        let errorMsg = 'Fout bij opslaan device';
+        try {
+            const errorObj = JSON.parse(error.message);
+            errorMsg = Object.entries(errorObj).map(([key, val]) => `${key}: ${val}`).join(', ');
+        } catch(e) {
+            errorMsg = error.message;
+        }
+        showNotification(errorMsg, 'danger');
+    });
+});
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Bootstrap tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    loadInterfaces();
+    loadDevice();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,334 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ title }} - Modbus Webserver{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>{{ title }}</h1>
+        <a href="{% url 'modbus_app:register_list' %}" class="btn btn-secondary">
+            <i class="bi bi-arrow-left"></i> Terug
+        </a>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form id="registerForm">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="device" class="form-label">
+                                Device *
+                                <i class="bi bi-question-circle text-muted" data-bs-toggle="tooltip" 
+                                   title="Het Modbus device waar dit register bij hoort."></i>
+                            </label>
+                            <select class="form-select" id="device" name="device" required>
+                                <option value="">Selecteer device...</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="name" class="form-label">
+                                Naam *
+                                <i class="bi bi-question-circle text-muted" data-bs-toggle="tooltip" 
+                                   title="Herkenbare naam voor dit register, bijv. 'Temperatuur Ruimte 1'."></i>
+                            </label>
+                            <input type="text" class="form-control" id="name" name="name" required>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="address" class="form-label">
+                                Adres *
+                                <i class="bi bi-question-circle text-muted" data-bs-toggle="tooltip" 
+                                   title="Modbus register adres (0-65535). Let op: sommige systemen gebruiken 1-based addressing."></i>
+                            </label>
+                            <input type="number" class="form-control" id="address" name="address" 
+                                   min="0" max="65535" required>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="function_code" class="form-label">
+                                Function Code *
+                                <i class="bi bi-question-circle text-muted" data-bs-toggle="tooltip" 
+                                   title="Modbus functie: FC01/02 voor bits, FC03/04 voor lezen, FC05/06/15/16 voor schrijven."></i>
+                            </label>
+                            <select class="form-select" id="function_code" name="function_code" required>
+                                <option value="">Selecteer function code...</option>
+                                <option value="1">FC01 - Read Coils</option>
+                                <option value="2">FC02 - Read Discrete Inputs</option>
+                                <option value="3">FC03 - Read Holding Registers</option>
+                                <option value="4">FC04 - Read Input Registers</option>
+                                <option value="5">FC05 - Write Single Coil</option>
+                                <option value="6">FC06 - Write Single Register</option>
+                                <option value="15">FC15 - Write Multiple Coils</option>
+                                <option value="16">FC16 - Write Multiple Registers</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="data_type" class="form-label">
+                                Data Type *
+                                <i class="bi bi-question-circle text-muted" data-bs-toggle="tooltip" 
+                                   title="Type data dat uitgelezen wordt. AUTO detecteert automatisch het beste type op basis van de waarde."></i>
+                            </label>
+                            <select class="form-select" id="data_type" name="data_type" required>
+                                <option value="">Selecteer data type...</option>
+                                <option value="AUTO">AUTO (automatisch detecteren)</option>
+                                <option value="INT16">INT16 (16-bit integer)</option>
+                                <option value="UINT16">UINT16 (16-bit unsigned)</option>
+                                <option value="INT32">INT32 (32-bit integer)</option>
+                                <option value="UINT32">UINT32 (32-bit unsigned)</option>
+                                <option value="FLOAT32">FLOAT32 (32-bit float)</option>
+                                <option value="BOOL">BOOL (boolean)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="conversion_factor" class="form-label">
+                                Conversie Factor
+                                <i class="bi bi-question-circle text-muted" data-bs-toggle="tooltip" 
+                                   title="Waarde wordt vermenigvuldigd met deze factor. Formule: (waarde × factor) + offset"></i>
+                            </label>
+                            <input type="number" class="form-control" id="conversion_factor" name="conversion_factor" 
+                                   value="1" step="0.001">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="conversion_offset" class="form-label">
+                                Conversie Offset
+                                <i class="bi bi-question-circle text-muted" data-bs-toggle="tooltip" 
+                                   title="Deze waarde wordt na de factor opgeteld. Formule: (waarde × factor) + offset"></i>
+                            </label>
+                            <input type="number" class="form-control" id="conversion_offset" name="conversion_offset" 
+                                   value="0" step="0.001">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="unit" class="form-label">
+                                Eenheid
+                                <i class="bi bi-question-circle text-muted" data-bs-toggle="tooltip" 
+                                   title="Meeteenheid van de waarde, zoals °C, kW, bar, m³/h, etc."></i>
+                            </label>
+                            <input type="text" class="form-control" id="unit" name="unit" 
+                                   placeholder="bijv. °C, kW, bar">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="description" class="form-label">
+                        Beschrijving
+                        <i class="bi bi-question-circle text-muted" data-bs-toggle="tooltip" 
+                           title="Optionele beschrijving van wat dit register meet of regelt."></i>
+                    </label>
+                    <textarea class="form-control" id="description" name="description" rows="3"></textarea>
+                </div>
+
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="enabled" name="enabled" checked>
+                    <label class="form-check-label" for="enabled">
+                        Register ingeschakeld
+                        <i class="bi bi-question-circle text-muted" data-bs-toggle="tooltip" 
+                           title="Uitgeschakelde registers worden niet uitgelezen door het systeem."></i>
+                    </label>
+                </div>
+
+                <div class="mb-3 form-check">
+                    <input type="checkbox" class="form-check-input" id="writable" name="writable">
+                    <label class="form-check-label" for="writable">
+                        Schrijfbaar (voor write function codes)
+                        <i class="bi bi-question-circle text-muted" data-bs-toggle="tooltip" 
+                           title="Alleen nodig voor FC05/06/15/16. Maakt het mogelijk om waarden naar het device te schrijven."></i>
+                    </label>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-save"></i> Opslaan
+                    </button>
+                    <a href="{% url 'modbus_app:register_list' %}" class="btn btn-secondary">
+                        Annuleren
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Utility functions
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function showNotification(message, type = 'info') {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show position-fixed top-0 start-50 translate-middle-x mt-3`;
+    alertDiv.style.zIndex = '9999';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+    setTimeout(() => alertDiv.remove(), 5000);
+}
+
+const csrftoken = getCookie('csrftoken');
+
+function fetchAPI(url, options = {}) {
+    const defaultOptions = {
+        credentials: 'same-origin',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    };
+    
+    if (options.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method)) {
+        defaultOptions.headers['X-CSRFToken'] = csrftoken;
+    }
+    
+    return fetch(url, { ...defaultOptions, ...options, headers: { ...defaultOptions.headers, ...options.headers } });
+}
+
+const registerId = {{ register_id|default:"null" }};
+const action = "{{ action }}";
+
+// Load devices for dropdown
+function loadDevices() {
+    fetchAPI('/api/v1/devices/')
+        .then(response => response.json())
+        .then(data => {
+            let devices = data.results || data;
+            const select = document.getElementById('device');
+            
+            if (Array.isArray(devices)) {
+                devices.forEach(device => {
+                    const option = document.createElement('option');
+                    option.value = device.id;
+                    option.textContent = device.name;
+                    select.appendChild(option);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Fout bij laden devices:', error);
+            showNotification('Fout bij laden devices: ' + error.message, 'danger');
+        });
+}
+
+// Load register data for edit mode
+function loadRegister() {
+    if (action === 'edit' && registerId) {
+        fetchAPI(`/api/v1/registers/${registerId}/`)
+            .then(response => response.json())
+            .then(register => {
+                document.getElementById('device').value = register.device;
+                document.getElementById('name').value = register.name;
+                document.getElementById('address').value = register.address;
+                document.getElementById('function_code').value = register.function_code;
+                document.getElementById('data_type').value = register.data_type;
+                document.getElementById('conversion_factor').value = register.conversion_factor || 1;
+                document.getElementById('conversion_offset').value = register.conversion_offset || 0;
+                document.getElementById('unit').value = register.unit || '';
+                document.getElementById('description').value = register.description || '';
+                document.getElementById('enabled').checked = register.enabled;
+                document.getElementById('writable').checked = register.writable || false;
+            })
+            .catch(error => {
+                console.error('Fout bij laden register:', error);
+                showNotification('Fout bij laden register: ' + error.message, 'danger');
+            });
+    }
+}
+
+// Handle form submission
+document.getElementById('registerForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        device: parseInt(document.getElementById('device').value),
+        name: document.getElementById('name').value,
+        address: parseInt(document.getElementById('address').value),
+        function_code: parseInt(document.getElementById('function_code').value),
+        data_type: document.getElementById('data_type').value,
+        conversion_factor: parseFloat(document.getElementById('conversion_factor').value),
+        conversion_offset: parseFloat(document.getElementById('conversion_offset').value),
+        unit: document.getElementById('unit').value,
+        description: document.getElementById('description').value,
+        enabled: document.getElementById('enabled').checked,
+        writable: document.getElementById('writable').checked
+    };
+    
+    const url = action === 'edit' ? `/api/v1/registers/${registerId}/` : '/api/v1/registers/';
+    const method = action === 'edit' ? 'PUT' : 'POST';
+    
+    fetchAPI(url, {
+        method: method,
+        body: JSON.stringify(formData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.json().then(err => {
+                throw new Error(JSON.stringify(err));
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        showNotification(`Register succesvol ${action === 'edit' ? 'bijgewerkt' : 'toegevoegd'}`, 'success');
+        setTimeout(() => {
+            window.location.href = "{% url 'modbus_app:register_list' %}";
+        }, 1000);
+    })
+    .catch(error => {
+        console.error('Fout bij opslaan register:', error);
+        let errorMsg = 'Fout bij opslaan register';
+        try {
+            const errorObj = JSON.parse(error.message);
+            errorMsg = Object.entries(errorObj).map(([key, val]) => `${key}: ${val}`).join(', ');
+        } catch(e) {
+            errorMsg = error.message;
+        }
+        showNotification(errorMsg, 'danger');
+    });
+});
+
+// Initialize
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Bootstrap tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+    
+    loadDevices();
+    loadRegister();
+});
+</script>
+{% endblock %}

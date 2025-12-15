@@ -166,6 +166,40 @@
 <script>
 let interfaceModal;
 
+// CSRF Token Helper
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+const csrftoken = getCookie('csrftoken');
+
+// Fetch wrapper with CSRF and credentials
+function fetchAPI(url, options = {}) {
+    const defaultOptions = {
+        credentials: 'same-origin',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    };
+    
+    if (options.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method)) {
+        defaultOptions.headers['X-CSRFToken'] = csrftoken;
+    }
+    
+    return fetch(url, { ...defaultOptions, ...options, headers: { ...defaultOptions.headers, ...options.headers } });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     interfaceModal = new bootstrap.Modal(document.getElementById('interfaceModal'));
     loadInterfaces();
@@ -189,18 +223,38 @@ function toggleProtocolFields() {
 }
 
 function loadInterfaces() {
-    fetch('/api/v1/interfaces/')
-        .then(response => response.json())
+    fetchAPI('/api/v1/interfaces/')
+        .then(response => {
+            if (!response.ok) {
+                if (response.status === 403 || response.status === 401) {
+                    throw new Error('Je bent niet ingelogd. Log in om interfaces te beheren.');
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
             const tbody = document.getElementById('interfaceTableBody');
             tbody.innerHTML = '';
             
-            if (data.length === 0) {
+            // Handle paginated response from DRF
+            let interfaces = data;
+            if (data.results !== undefined) {
+                interfaces = data.results;
+            }
+            
+            if (!Array.isArray(interfaces)) {
+                console.error('Unexpected data format:', data);
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-danger">Onverwachte data ontvangen</td></tr>';
+                return;
+            }
+            
+            if (interfaces.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="7" class="text-center">Geen interfaces geconfigureerd</td></tr>';
                 return;
             }
             
-            data.forEach(iface => {
+            interfaces.forEach(iface => {
                 const row = document.createElement('tr');
                 
                 const statusClass = iface.connection_status === 'online' ? 'success' : 
@@ -235,7 +289,9 @@ function loadInterfaces() {
         })
         .catch(error => {
             console.error('Fout bij laden interfaces:', error);
-            showNotification('Fout bij laden interfaces', 'danger');
+            const tbody = document.getElementById('interfaceTableBody');
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">${error.message}</td></tr>`;
+            showNotification('Fout bij laden interfaces: ' + error.message, 'danger');
         });
 }
 
@@ -248,7 +304,7 @@ function openInterfaceModal(id = null) {
     
     if (id) {
         // Load interface data for editing
-        fetch(`/api/v1/interfaces/${id}/`)
+        fetchAPI(`/api/v1/interfaces/${id}/`)
             .then(response => response.json())
             .then(data => {
                 document.getElementById('interfaceId').value = data.id;
@@ -306,11 +362,8 @@ function saveInterface() {
     const method = id ? 'PUT' : 'POST';
     const url = id ? `/api/v1/interfaces/${id}/` : '/api/v1/interfaces/';
     
-    fetch(url, {
+    fetchAPI(url, {
         method: method,
-        headers: {
-            'Content-Type': 'application/json',
-        },
         body: JSON.stringify(data)
     })
     .then(response => {
@@ -335,7 +388,7 @@ function saveInterface() {
 function testInterfaceConnection(id) {
     showNotification('Verbinding testen...', 'info');
     
-    fetch(`/api/v1/interfaces/${id}/test_connection/`, {
+    fetchAPI(`/api/v1/interfaces/${id}/test_connection/`, {
         method: 'POST'
     })
     .then(response => response.json())
@@ -367,7 +420,7 @@ function deleteInterface(id) {
         return;
     }
     
-    fetch(`/api/v1/interfaces/${id}/`, {
+    fetchAPI(`/api/v1/interfaces/${id}/`, {
         method: 'DELETE'
     })
     .then(response => {

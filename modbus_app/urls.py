@@ -25,10 +25,22 @@ urlpatterns = [
     # Dashboard
     path('', views.dashboard_view, name='dashboard'),
     
-    # Configuration views (will be implemented)
+    # Configuration views
     path('config/interfaces/', views.interface_list_view, name='interface_list'),
+    path('config/interfaces/add/', views.interface_add_view, name='interface_add'),
+    path('config/interfaces/<int:pk>/edit/', views.interface_edit_view, name='interface_edit'),
+    
     path('config/devices/', views.device_list_view, name='device_list'),
+    path('config/devices/add/', views.device_add_view, name='device_add'),
+    path('config/devices/<int:pk>/edit/', views.device_edit_view, name='device_edit'),
+    
     path('config/registers/', views.register_list_view, name='register_list'),
+    path('config/registers/add/', views.register_add_view, name='register_add'),
+    path('config/registers/<int:pk>/edit/', views.register_edit_view, name='register_edit'),
+    
+    path('config/dashboard-layout/', views.dashboard_layout_view, name='dashboard_layout'),
+    path('config/alarms/', views.alarm_list_view, name='alarm_list'),
+    path('config/templates/', views.template_list_view, name='template_list'),
     
     # API endpoints
     path('api/v1/', include(router.urls)),

@@ -56,23 +56,76 @@
 </div>
 
 <script>
+// CSRF Token Helper
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+const csrftoken = getCookie('csrftoken');
+
+function fetchAPI(url, options = {}) {
+    const defaultOptions = {
+        credentials: 'same-origin',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    };
+    
+    if (options.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method)) {
+        defaultOptions.headers['X-CSRFToken'] = csrftoken;
+    }
+    
+    return fetch(url, { ...defaultOptions, ...options, headers: { ...defaultOptions.headers, ...options.headers } });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     loadDevices();
 });
 
 function loadDevices() {
-    fetch('/api/v1/devices/')
-        .then(response => response.json())
+    fetchAPI('/api/v1/devices/')
+        .then(response => {
+            if (!response.ok) {
+                if (response.status === 403 || response.status === 401) {
+                    throw new Error('Je bent niet ingelogd. Log in om devices te beheren.');
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
             const tbody = document.getElementById('deviceTableBody');
             tbody.innerHTML = '';
             
-            if (data.length === 0) {
+            // Handle paginated response from DRF
+            let devices = data;
+            if (data.results !== undefined) {
+                devices = data.results;
+            }
+            
+            if (!Array.isArray(devices)) {
+                console.error('Unexpected data format:', data);
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-danger">Onverwachte data ontvangen</td></tr>';
+                return;
+            }
+            
+            if (devices.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="8" class="text-center">Geen devices geconfigureerd</td></tr>';
                 return;
             }
             
-            data.forEach(device => {
+            devices.forEach(device => {
                 const row = document.createElement('tr');
                 
                 const statusClass = device.status === 'ONLINE' ? 'success' : 
@@ -110,14 +163,16 @@ function loadDevices() {
         })
         .catch(error => {
             console.error('Fout bij laden devices:', error);
-            showNotification('Fout bij laden devices', 'danger');
+            const tbody = document.getElementById('deviceTableBody');
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center text-danger">${error.message}</td></tr>`;
+            showNotification('Fout bij laden devices: ' + error.message, 'danger');
         });
 }
 
 function pollDevice(id) {
     showNotification('Poll gestart...', 'info');
     
-    fetch(`/api/v1/devices/${id}/poll_now/`, {
+    fetchAPI(`/api/v1/devices/${id}/poll_now/`, {
         method: 'POST'
     })
     .then(response => response.json())
@@ -136,7 +191,7 @@ function deleteDevice(id) {
         return;
     }
     
-    fetch(`/api/v1/devices/${id}/`, {
+    fetchAPI(`/api/v1/devices/${id}/`, {
         method: 'DELETE'
     })
     .then(response => {

@@ -169,6 +169,7 @@ class Register(models.Model):
     ]
     
     DATA_TYPE_CHOICES = [
+        ('AUTO', 'Auto Detect'),
         ('INT16', '16-bit Signed Integer'),
         ('UINT16', '16-bit Unsigned Integer'),
         ('INT32', '32-bit Signed Integer'),

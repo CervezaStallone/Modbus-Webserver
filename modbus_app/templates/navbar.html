@@ -19,13 +19,13 @@
         <a href="{% url 'modbus_app:register_list' %}" class="list-group-item list-group-item-action bg-dark text-white">
             Registers
         </a>
-        <a href="#" class="list-group-item list-group-item-action bg-dark text-white">
+        <a href="{% url 'modbus_app:dashboard_layout' %}" class="list-group-item list-group-item-action bg-dark text-white">
             Dashboard Layout
         </a>
-        <a href="#" class="list-group-item list-group-item-action bg-dark text-white">
+        <a href="{% url 'modbus_app:alarm_list' %}" class="list-group-item list-group-item-action bg-dark text-white">
             Alarms
         </a>
-        <a href="#" class="list-group-item list-group-item-action bg-dark text-white">
+        <a href="{% url 'modbus_app:template_list' %}" class="list-group-item list-group-item-action bg-dark text-white">
             Templates
         </a>
         
@@ -37,5 +37,20 @@
         <a href="/api/docs/" class="list-group-item list-group-item-action bg-dark text-white">
             API Docs
         </a>
+        
+        {% if user.is_authenticated %}
+        <div class="text-white px-3 py-2 small fw-bold border-top mt-2">GEBRUIKER</div>
+        <div class="list-group-item bg-dark text-white">
+            <small>Ingelogd als: <strong>{{ user.username }}</strong></small>
+        </div>
+        <a href="{% url 'logout' %}" class="list-group-item list-group-item-action bg-dark text-danger">
+            <i class="bi bi-box-arrow-right"></i> Uitloggen
+        </a>
+        {% else %}
+        <div class="text-white px-3 py-2 small fw-bold border-top mt-2">GEBRUIKER</div>
+        <a href="/admin/login/?next=/" class="list-group-item list-group-item-action bg-dark text-success">
+            <i class="bi bi-box-arrow-in-right"></i> Inloggen
+        </a>
+        {% endif %}
     </div>
 </div>

@@ -169,7 +169,7 @@ class DashboardGroupSerializer(serializers.ModelSerializer):
     class Meta:
         model = DashboardGroup
         fields = [
-            'id', 'name', 'description', 'order', 'collapsed',
+            'id', 'name', 'description', 'row_order', 'collapsed',
             'widget_count', 'widgets',
             'created_at', 'updated_at'
         ]
@@ -266,11 +266,18 @@ class AuditLogSerializer(serializers.ModelSerializer):
 class ModbusInterfaceListSerializer(serializers.ModelSerializer):
     """Vereenvoudigde serializer voor interface lijst."""
     status_display = serializers.CharField(source='get_connection_status_display', read_only=True)
+    protocol_display = serializers.CharField(source='get_protocol_display', read_only=True)
     device_count = serializers.SerializerMethodField()
     
     class Meta:
         model = ModbusInterface
-        fields = ['id', 'name', 'protocol', 'connection_status', 'status_display', 'device_count']
+        fields = [
+            'id', 'name', 'protocol', 'protocol_display',
+            'port', 'baudrate', 'parity', 'stopbits', 'bytesize',
+            'host', 'tcp_port', 'timeout',
+            'connection_status', 'status_display', 'last_seen',
+            'device_count'
+        ]
     
     def get_device_count(self, obj):
         return obj.devices.count()
@@ -280,10 +287,18 @@ class DeviceListSerializer(serializers.ModelSerializer):
     """Vereenvoudigde serializer voor device lijst."""
     interface_name = serializers.CharField(source='interface.name', read_only=True)
     status_display = serializers.CharField(source='get_connection_status_display', read_only=True)
+    register_count = serializers.SerializerMethodField()
     
     class Meta:
         model = Device
-        fields = ['id', 'name', 'interface_name', 'slave_id', 'enabled', 'connection_status', 'status_display']
+        fields = [
+            'id', 'name', 'description', 'interface_name', 'slave_id', 
+            'enabled', 'polling_interval', 'connection_status', 'status_display',
+            'last_poll', 'error_count', 'register_count'
+        ]
+    
+    def get_register_count(self, obj):
+        return obj.registers.filter(enabled=True).count()
 
 
 class RegisterListSerializer(serializers.ModelSerializer):
@@ -292,4 +307,7 @@ class RegisterListSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Register
-        fields = ['id', 'name', 'device_name', 'address', 'function_code', 'enabled', 'writable']
+        fields = [
+            'id', 'name', 'device_name', 'address', 'function_code', 
+            'data_type', 'unit', 'enabled', 'writable'
+        ]

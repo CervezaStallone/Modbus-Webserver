@@ -12,6 +12,11 @@ def django_db_setup():
     settings.DATABASES['default'] = {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': ':memory:',
+        'ATOMIC_REQUESTS': True,
+        'OPTIONS': {
+            'timeout': 20,
+            'check_same_thread': False,
+        },
     }
 
 
@@ -80,4 +85,28 @@ def register(db, device):
         conversion_offset=0.0,
         unit='°C',
         enabled=True
+    )
+
+
+@pytest.fixture
+def test_user(db, django_user_model):
+    """Create a test user for each test."""
+    import uuid
+    username = f'testuser_{uuid.uuid4().hex[:8]}'
+    return django_user_model.objects.create_user(
+        username=username,
+        password='testpass123',
+        email=f'{username}@example.com'
+    )
+
+
+@pytest.fixture
+def admin_user(db, django_user_model):
+    """Create an admin user for each test."""
+    import uuid
+    username = f'admin_{uuid.uuid4().hex[:8]}'
+    return django_user_model.objects.create_superuser(
+        username=username,
+        password='admin123',
+        email=f'{username}@example.com'
     )

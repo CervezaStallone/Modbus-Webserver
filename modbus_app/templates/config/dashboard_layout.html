@@ -1,0 +1,347 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard Layout - Modbus Webserver{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1>Dashboard Layout</h1>
+        <button class="btn btn-primary" id="addGroupBtn">
+            <i class="bi bi-plus-circle"></i> Groep Toevoegen
+        </button>
+    </div>
+
+    <div class="alert alert-info">
+        <i class="bi bi-info-circle"></i> Configureer hier de layout van je dashboard met groepen en widgets.
+    </div>
+
+    <div id="dashboardGroups" class="row">
+        <!-- Groups will be loaded here -->
+    </div>
+</div>
+
+<!-- Add/Edit Group Modal -->
+<div class="modal fade" id="groupModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Groep</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="groupForm">
+                    <div class="mb-3">
+                        <label for="groupName" class="form-label">Naam *</label>
+                        <input type="text" class="form-control" id="groupName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="groupOrder" class="form-label">Volgorde</label>
+                        <input type="number" class="form-control" id="groupOrder" value="0">
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+                <button type="button" class="btn btn-primary" id="saveGroupBtn">Opslaan</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Widget Modal -->
+<div class="modal fade" id="widgetModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Widget</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="widgetForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="widgetTitle" class="form-label">Titel *</label>
+                                <input type="text" class="form-control" id="widgetTitle" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="widgetType" class="form-label">Type *</label>
+                                <select class="form-select" id="widgetType" required>
+                                    <option value="gauge">Gauge</option>
+                                    <option value="text">Text Display</option>
+                                    <option value="status">Status</option>
+                                    <option value="line_chart">Line Chart</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="widgetRegister" class="form-label">Register *</label>
+                        <select class="form-select" id="widgetRegister" required>
+                            <option value="">Selecteer register...</option>
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="widgetWidth" class="form-label">Breedte (kolommen 1-12)</label>
+                                <input type="number" class="form-control" id="widgetWidth" value="6" min="1" max="12">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="widgetOrder" class="form-label">Volgorde</label>
+                                <input type="number" class="form-control" id="widgetOrder" value="0">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="widgetConfig" class="form-label">Configuratie (JSON)</label>
+                        <textarea class="form-control" id="widgetConfig" rows="5">{}</textarea>
+                        <div class="form-text">Bijvoorbeeld: {"min": 0, "max": 100, "unit": "°C"}</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuleren</button>
+                <button type="button" class="btn btn-primary" id="saveWidgetBtn">Opslaan</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentGroupId = null;
+let currentWidgetId = null;
+let groupModal, widgetModal;
+
+document.addEventListener('DOMContentLoaded', function() {
+    groupModal = new bootstrap.Modal(document.getElementById('groupModal'));
+    widgetModal = new bootstrap.Modal(document.getElementById('widgetModal'));
+    
+    loadDashboardGroups();
+    loadRegisters();
+    
+    document.getElementById('addGroupBtn').addEventListener('click', () => {
+        currentGroupId = null;
+        document.getElementById('groupForm').reset();
+        groupModal.show();
+    });
+    
+    document.getElementById('saveGroupBtn').addEventListener('click', saveGroup);
+    document.getElementById('saveWidgetBtn').addEventListener('click', saveWidget);
+});
+
+function loadDashboardGroups() {
+    fetchAPI('/api/v1/dashboard-groups/')
+        .then(response => response.json())
+        .then(data => {
+            const groups = data.results || data;
+            const container = document.getElementById('dashboardGroups');
+            container.innerHTML = '';
+            
+            if (!Array.isArray(groups) || groups.length === 0) {
+                container.innerHTML = '<div class="col-12"><p class="text-muted">Nog geen groepen aangemaakt.</p></div>';
+                return;
+            }
+            
+            groups.forEach(group => {
+                container.innerHTML += createGroupCard(group);
+            });
+            
+            // Load widgets for each group
+            groups.forEach(group => loadGroupWidgets(group.id));
+        })
+        .catch(error => {
+            console.error('Fout bij laden groepen:', error);
+            showNotification('Fout bij laden groepen: ' + error.message, 'danger');
+        });
+}
+
+function createGroupCard(group) {
+    return `
+        <div class="col-12 mb-4">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">${group.name}</h5>
+                    <div>
+                        <button class="btn btn-sm btn-primary" onclick="addWidget(${group.id})">
+                            <i class="bi bi-plus"></i> Widget
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="editGroup(${group.id})">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteGroup(${group.id})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <div id="group-${group.id}-widgets" class="row">
+                        <div class="col-12"><p class="text-muted">Laden...</p></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function loadGroupWidgets(groupId) {
+    fetchAPI(`/api/v1/dashboard-widgets/?group=${groupId}`)
+        .then(response => response.json())
+        .then(data => {
+            const widgets = data.results || data;
+            const container = document.getElementById(`group-${groupId}-widgets`);
+            
+            if (!Array.isArray(widgets) || widgets.length === 0) {
+                container.innerHTML = '<div class="col-12"><p class="text-muted">Geen widgets in deze groep.</p></div>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            widgets.forEach(widget => {
+                container.innerHTML += createWidgetCard(widget);
+            });
+        })
+        .catch(error => console.error('Fout bij laden widgets:', error));
+}
+
+function createWidgetCard(widget) {
+    return `
+        <div class="col-md-${widget.width || 6} mb-3">
+            <div class="card">
+                <div class="card-body">
+                    <h6 class="card-title">${widget.title}</h6>
+                    <p class="card-text"><small class="text-muted">Type: ${widget.widget_type}</small></p>
+                    <div class="btn-group btn-group-sm">
+                        <button class="btn btn-outline-secondary" onclick="editWidget(${widget.id}, ${widget.group})">
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="deleteWidget(${widget.id}, ${widget.group})">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function loadRegisters() {
+    fetchAPI('/api/v1/registers/')
+        .then(response => response.json())
+        .then(data => {
+            const registers = data.results || data;
+            const select = document.getElementById('widgetRegister');
+            select.innerHTML = '<option value="">Selecteer register...</option>';
+            
+            if (Array.isArray(registers)) {
+                registers.forEach(reg => {
+                    select.innerHTML += `<option value="${reg.id}">${reg.name} (${reg.device_name})</option>`;
+                });
+            }
+        });
+}
+
+function saveGroup() {
+    const data = {
+        name: document.getElementById('groupName').value,
+        order: parseInt(document.getElementById('groupOrder').value) || 0
+    };
+    
+    const url = currentGroupId ? `/api/v1/dashboard-groups/${currentGroupId}/` : '/api/v1/dashboard-groups/';
+    const method = currentGroupId ? 'PUT' : 'POST';
+    
+    fetchAPI(url, { method, body: JSON.stringify(data) })
+        .then(() => {
+            groupModal.hide();
+            showNotification('Groep opgeslagen', 'success');
+            loadDashboardGroups();
+        })
+        .catch(error => showNotification('Fout: ' + error.message, 'danger'));
+}
+
+function addWidget(groupId) {
+    currentGroupId = groupId;
+    currentWidgetId = null;
+    document.getElementById('widgetForm').reset();
+    widgetModal.show();
+}
+
+function saveWidget() {
+    const data = {
+        group: currentGroupId,
+        title: document.getElementById('widgetTitle').value,
+        widget_type: document.getElementById('widgetType').value,
+        register: parseInt(document.getElementById('widgetRegister').value),
+        width: parseInt(document.getElementById('widgetWidth').value),
+        order: parseInt(document.getElementById('widgetOrder').value),
+        config: JSON.parse(document.getElementById('widgetConfig').value || '{}')
+    };
+    
+    const url = currentWidgetId ? `/api/v1/dashboard-widgets/${currentWidgetId}/` : '/api/v1/dashboard-widgets/';
+    const method = currentWidgetId ? 'PUT' : 'POST';
+    
+    fetchAPI(url, { method, body: JSON.stringify(data) })
+        .then(() => {
+            widgetModal.hide();
+            showNotification('Widget opgeslagen', 'success');
+            loadDashboardGroups();
+        })
+        .catch(error => showNotification('Fout: ' + error.message, 'danger'));
+}
+
+function editGroup(id) {
+    fetchAPI(`/api/v1/dashboard-groups/${id}/`)
+        .then(response => response.json())
+        .then(group => {
+            currentGroupId = id;
+            document.getElementById('groupName').value = group.name;
+            document.getElementById('groupOrder').value = group.order;
+            groupModal.show();
+        });
+}
+
+function deleteGroup(id) {
+    if (!confirm('Weet je zeker dat je deze groep wilt verwijderen?')) return;
+    
+    fetchAPI(`/api/v1/dashboard-groups/${id}/`, { method: 'DELETE' })
+        .then(() => {
+            showNotification('Groep verwijderd', 'success');
+            loadDashboardGroups();
+        })
+        .catch(error => showNotification('Fout: ' + error.message, 'danger'));
+}
+
+function editWidget(id, groupId) {
+    fetchAPI(`/api/v1/dashboard-widgets/${id}/`)
+        .then(response => response.json())
+        .then(widget => {
+            currentGroupId = groupId;
+            currentWidgetId = id;
+            document.getElementById('widgetTitle').value = widget.title;
+            document.getElementById('widgetType').value = widget.widget_type;
+            document.getElementById('widgetRegister').value = widget.register;
+            document.getElementById('widgetWidth').value = widget.width;
+            document.getElementById('widgetOrder').value = widget.order;
+            document.getElementById('widgetConfig').value = JSON.stringify(widget.config, null, 2);
+            widgetModal.show();
+        });
+}
+
+function deleteWidget(id, groupId) {
+    if (!confirm('Weet je zeker dat je deze widget wilt verwijderen?')) return;
+    
+    fetchAPI(`/api/v1/dashboard-widgets/${id}/`, { method: 'DELETE' })
+        .then(() => {
+            showNotification('Widget verwijderd', 'success');
+            loadGroupWidgets(groupId);
+        })
+        .catch(error => showNotification('Fout: ' + error.message, 'danger'));
+}
+</script>
+{% endblock %}

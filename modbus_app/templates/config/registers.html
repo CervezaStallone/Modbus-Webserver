@@ -55,6 +55,39 @@
 </div>
 
 <script>
+// CSRF Token Helper
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+const csrftoken = getCookie('csrftoken');
+
+function fetchAPI(url, options = {}) {
+    const defaultOptions = {
+        credentials: 'same-origin',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    };
+    
+    if (options.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(options.method)) {
+        defaultOptions.headers['X-CSRFToken'] = csrftoken;
+    }
+    
+    return fetch(url, { ...defaultOptions, ...options, headers: { ...defaultOptions.headers, ...options.headers } });
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     loadDevices();
     
@@ -68,16 +101,33 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function loadDevices() {
-    fetch('/api/v1/devices/')
-        .then(response => response.json())
-        .then(devices => {
+    fetchAPI('/api/v1/devices/')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            // Handle paginated response from DRF
+            let devices = data;
+            if (data.results !== undefined) {
+                devices = data.results;
+            }
+            
             const select = document.getElementById('deviceFilter');
-            devices.forEach(device => {
-                const option = document.createElement('option');
-                option.value = device.id;
-                option.textContent = device.name;
-                select.appendChild(option);
-            });
+            if (Array.isArray(devices)) {
+                devices.forEach(device => {
+                    const option = document.createElement('option');
+                    option.value = device.id;
+                    option.textContent = device.name;
+                    select.appendChild(option);
+                });
+            }
+        })
+        .catch(error => {
+            console.error('Fout bij laden devices:', error);
+            showNotification('Fout bij laden devices: ' + error.message, 'danger');
         });
 }
 
@@ -89,11 +139,31 @@ function filterRegisters() {
         return;
     }
     
-    fetch(`/api/v1/devices/${deviceId}/registers/`)
-        .then(response => response.json())
-        .then(registers => {
+    fetchAPI(`/api/v1/devices/${deviceId}/registers/`)
+        .then(response => {
+            if (!response.ok) {
+                if (response.status === 403 || response.status === 401) {
+                    throw new Error('Je bent niet ingelogd. Log in om registers te beheren.');
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
             const tbody = document.getElementById('registerTableBody');
             tbody.innerHTML = '';
+            
+            // Handle paginated response from DRF
+            let registers = data;
+            if (data.results !== undefined) {
+                registers = data.results;
+            }
+            
+            if (!Array.isArray(registers)) {
+                console.error('Unexpected data format:', data);
+                tbody.innerHTML = '<tr><td colspan="9" class="text-center text-danger">Onverwachte data ontvangen</td></tr>';
+                return;
+            }
             
             if (registers.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="9" class="text-center">Geen registers geconfigureerd</td></tr>';
@@ -126,7 +196,7 @@ function filterRegisters() {
 }
 
 function loadRegisterValue(registerId) {
-    fetch(`/api/v1/registers/${registerId}/`)
+    fetchAPI(`/api/v1/registers/${registerId}/`)
         .then(response => response.json())
         .then(data => {
             if (data.current_value) {
@@ -138,7 +208,7 @@ function loadRegisterValue(registerId) {
 }
 
 function readRegister(id) {
-    fetch(`/api/v1/registers/${id}/read_now/`, { method: 'POST' })
+    fetchAPI(`/api/v1/registers/${id}/read_now/`, { method: 'POST' })
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
@@ -152,9 +222,8 @@ function writeRegister(id) {
     const value = prompt('Voer nieuwe waarde in:');
     if (!value) return;
     
-    fetch(`/api/v1/registers/${id}/write_value/`, {
+    fetchAPI(`/api/v1/registers/${id}/write_value/`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ value: parseFloat(value) })
     })
     .then(response => response.json())
@@ -166,7 +235,7 @@ function writeRegister(id) {
 function deleteRegister(id) {
     if (!confirm('Weet je zeker dat je dit register wilt verwijderen?')) return;
     
-    fetch(`/api/v1/registers/${id}/`, { method: 'DELETE' })
+    fetchAPI(`/api/v1/registers/${id}/`, { method: 'DELETE' })
         .then(response => {
             if (response.ok) {
                 showNotification('Register verwijderd', 'success');
