@@ -1,24 +1,24 @@
-# Modbus Webserver
+# Modbus Web Server
 
-Een complete Django-based webapplicatie voor monitoring en configuratie van Modbus RTU/TCP apparaten met real-time dashboard, trending, en alarm functionaliteit.
+A complete Django-based web application for monitoring and configuration of Modbus RTU/TCP devices with real-time dashboard, trending, and alarm functionality.
 
 ## Features
 
-- Modbus RTU (serieel) en TCP/IP protocol support
-- Real-time data acquisition en monitoring
-- Configureerbare dashboards met meerdere widget types
-- Time-series data trending met aggregatie
-- Alarm systeem met threshold monitoring
+- Modbus RTU (serial) and TCP/IP protocol support
+- Real-time data acquisition and monitoring
+- Configurable dashboards with multiple widget types
+- Time-series data trending with aggregation
+- Alarm system with threshold monitoring
 - WebSocket real-time updates
-- REST API voor externe integratie
-- Background task processing met Celery
+- REST API for external integration
+- Background task processing with Celery
 - Complete test suite
 - Docker deployment ready
 
 ## Tech Stack
 
 - **Backend**: Django 5.0, Django REST Framework, Django Channels
-- **Database**: SQLite (geoptimaliseerd voor performance)
+- **Database**: SQLite (optimized for performance)
 - **Task Queue**: Celery + Redis
 - **WebSockets**: Django Channels + Redis
 - **Frontend**: Bootstrap 5, Chart.js
@@ -28,7 +28,7 @@ Een complete Django-based webapplicatie voor monitoring en configuratie van Modb
 
 ## Quick Start
 
-### Development Setup (zonder Docker)
+### Development Setup (without Docker)
 
 ```bash
 # Clone repository
@@ -55,7 +55,7 @@ python manage.py createsuperuser
 python manage.py runserver
 ```
 
-In aparte terminals:
+In separate terminals:
 ```bash
 # Celery worker
 celery -A modbus_webserver worker -l info
@@ -64,10 +64,10 @@ celery -A modbus_webserver worker -l info
 celery -A modbus_webserver beat -l info
 ```
 
-### Development Setup (met Docker)
+### Development Setup (with Docker)
 
 ```bash
-# Start alle services
+# Start all services
 docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
 
 # Run migrations
@@ -81,85 +81,85 @@ docker-compose exec web python manage.py createsuperuser
 
 ```
 modbus-webserver/
-├── modbus_webserver/      # Django project configuratie
-├── modbus_app/            # Hoofd applicatie
+├── modbus_webserver/      # Django project configuration
+├── modbus_app/            # Main application
 │   ├── models.py          # Database models
 │   ├── views.py           # Views
 │   ├── serializers.py     # DRF serializers
 │   ├── consumers.py       # WebSocket consumers
 │   ├── tasks.py           # Celery tasks
 │   ├── services/          # Business logic
-│   ├── utils/             # Helper functies
+│   ├── utils/             # Helper functions
 │   └── templates/         # HTML templates
 ├── static/                # Static files (CSS, JS)
 ├── tests/                 # Test suite
-├── nginx/                 # Nginx configuratie
-└── docs/                  # Documentatie
+├── nginx/                 # Nginx configuration
+└── docs/                  # Documentation
 ```
 
 ## Usage
 
-### 1. Modbus Interface Configureren
+### 1. Configure Modbus Interface
 
-Ga naar "Configuration > Interfaces" en maak een nieuwe interface aan:
+Navigate to "Configuration > Interfaces" and create a new interface:
 
-**RTU (Serieel)**:
-- Naam: bijv. "COM3 Interface"
+**RTU (Serial)**:
+- Name: e.g., "COM3 Interface"
 - Protocol: RTU
-- Port: bijv. "COM3" of "/dev/ttyUSB0"
+- Port: e.g., "COM3" or "/dev/ttyUSB0"
 - Baudrate: 9600, 19200, etc.
 - Parity: None, Even, Odd
-- Stopbits: 1 of 2
-- Bytesize: 7 of 8
+- Stopbits: 1 or 2
+- Bytesize: 7 or 8
 
 **TCP/IP**:
-- Naam: bijv. "PLC TCP"
+- Name: e.g., "PLC TCP"
 - Protocol: TCP
-- Host: IP adres (bijv. 192.168.1.100)
-- Port: 502 (standaard Modbus)
+- Host: IP address (e.g., 192.168.1.100)
+- Port: 502 (default Modbus)
 
-### 2. Device Toevoegen
+### 2. Add Device
 
-Ga naar "Configuration > Devices":
-- Kies interface
+Navigate to "Configuration > Devices":
+- Select interface
 - Slave ID (1-247)
-- Polling interval in seconden
-- Beschrijving
+- Polling interval in seconds
+- Description
 
-### 3. Registers Configureren
+### 3. Configure Registers
 
-Selecteer device en voeg registers toe:
-- Naam: bijv. "Temperatuur Ketel"
+Select device and add registers:
+- Name: e.g., "Boiler Temperature"
 - Function Code: 3 (Read Holding Registers)
-- Adres: Register adres
+- Address: Register address
 - Data Type: INT16, UINT16, INT32, FLOAT32, etc.
-- Conversie: factor en offset
-- Eenheid: °C, kW, etc.
-- Trenden: Aan/uit
+- Conversion: factor and offset
+- Unit: °C, kW, etc.
+- Trending: On/Off
 
 ### 4. Dashboard Widgets
 
-Ga naar "Configuration > Dashboard Layout":
-- Maak groepen aan
-- Voeg widgets toe per register
-- Configureer widget type (line chart, gauge, text)
-- Stel positie en grootte in
-- Configureer trend parameters (sample rate, Y-as, kleuren)
+Navigate to "Configuration > Dashboard Layout":
+- Create groups
+- Add widgets per register
+- Configure widget type (line chart, gauge, text)
+- Set position and size
+- Configure trend parameters (sample rate, Y-axis, colors)
 
-### 5. Dashboard Bekijken
+### 5. View Dashboard
 
-Ga naar "Dashboard" om live data te zien. Data wordt real-time bijgewerkt via WebSockets.
+Navigate to "Dashboard" to see live data. Data is updated in real-time via WebSockets.
 
 ## Testing
 
 ```bash
-# Run alle tests
+# Run all tests
 pytest
 
-# Met coverage report
+# With coverage report
 pytest --cov=modbus_app --cov-report=html
 
-# Specifieke test module
+# Specific test module
 pytest tests/unit/test_models.py
 
 # Verbose output
@@ -168,7 +168,7 @@ pytest -v
 
 ## API Documentation
 
-API documentatie is beschikbaar op:
+API documentation is available at:
 - Swagger UI: http://localhost:8000/api/docs/
 - ReDoc: http://localhost:8000/api/redoc/
 - OpenAPI Schema: http://localhost:8000/api/schema/
@@ -176,7 +176,7 @@ API documentatie is beschikbaar op:
 ## Production Deployment
 
 ```bash
-# Build en start productie containers
+# Build and start production containers
 docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 # Run migrations
@@ -189,68 +189,68 @@ docker-compose exec web python manage.py collectstatic --noinput
 docker-compose exec web python manage.py createsuperuser
 ```
 
-Applicatie is beschikbaar op http://localhost
+Application is available at http://localhost
 
 ## Configuration
 
-Belangrijke environment variables (`.env`):
+Important environment variables (`.env`):
 
-- `DJANGO_SECRET_KEY`: Secret key voor Django (verander in productie!)
-- `DJANGO_DEBUG`: Debug mode (False in productie)
+- `DJANGO_SECRET_KEY`: Secret key for Django (change in production!)
+- `DJANGO_DEBUG`: Debug mode (False in production)
 - `REDIS_URL`: Redis connection URL
-- `DEFAULT_POLLING_INTERVAL`: Default polling frequentie (seconden)
-- `DATA_RETENTION_DAYS`: Hoe lang raw data bewaren
+- `DEFAULT_POLLING_INTERVAL`: Default polling frequency (seconds)
+- `DATA_RETENTION_DAYS`: How long to keep raw data
 
-Zie `.env.example` voor alle opties.
+See `.env.example` for all options.
 
-## Performance Optimalisatie
+## Performance Optimization
 
-SQLite is geoptimaliseerd met:
+SQLite is optimized with:
 - Write-Ahead Logging (WAL mode)
-- Verhoogde cache size
-- Database indexen op kritieke velden
-- Bulk insert operaties voor trend data
-- Pre-calculated aggregates voor lange time ranges
+- Increased cache size
+- Database indexes on critical fields
+- Bulk insert operations for trend data
+- Pre-calculated aggregates for long time ranges
 
 ## Troubleshooting
 
-### Modbus connectie problemen
+### Modbus Connection Issues
 
-- Check seriële poort permissions op Linux: `sudo usermod -a -G dialout $USER`
-- Verificeer baudrate en parity settings matchen met apparaat
-- Test connectie met built-in test tool: `python manage.py test_modbus`
+- Check serial port permissions on Linux: `sudo usermod -a -G dialout $USER`
+- Verify baudrate and parity settings match the device
+- Test connection with built-in test tool: `python manage.py test_modbus`
 
-### WebSocket connectie problemen
+### WebSocket Connection Issues
 
-- Controleer Redis is running
-- Check CHANNEL_LAYERS configuratie in settings
-- Browser console voor JavaScript errors
+- Verify Redis is running
+- Check CHANNEL_LAYERS configuration in settings
+- Browser console for JavaScript errors
 
-### Celery tasks draaien niet
+### Celery Tasks Not Running
 
-- Controleer Celery worker en beat zijn gestart
-- Check Redis connectie
-- Bekijk Celery logs voor errors
+- Verify Celery worker and beat are started
+- Check Redis connection
+- Review Celery logs for errors
 
 ## Contributing
 
-1. Fork het project
+1. Fork the project
 2. Create feature branch (`git checkout -b feature/AmazingFeature`)
 3. Commit changes (`git commit -m 'Add AmazingFeature'`)
-4. Push naar branch (`git push origin feature/AmazingFeature`)
+4. Push to branch (`git push origin feature/AmazingFeature`)
 5. Open Pull Request
 
 ## License
 
-Dit project is beschikbaar onder de MIT License.
+This project is available under the MIT License.
 
 ## Contact
 
-Voor vragen en support, zie de documentatie in `/docs` of open een issue.
+For questions and support, see the documentation in `/docs` or open an issue.
 
-## Documentatie
+## Documentation
 
-- [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) - Volledig implementatieplan
-- [docs/API.md](docs/API.md) - API documentatie
-- [docs/MODBUS_CONFIG.md](docs/MODBUS_CONFIG.md) - Modbus configuratie guide
-- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) - Deployment instructies
+- [IMPLEMENTATION_PLAN.md](IMPLEMENTATION_PLAN.md) - Complete implementation plan
+- [docs/API.md](docs/API.md) - API documentation
+- [docs/MODBUS_CONFIG.md](docs/MODBUS_CONFIG.md) - Modbus configuration guide
+- [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) - Deployment instructions
