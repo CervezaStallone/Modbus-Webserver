@@ -2,6 +2,7 @@
 Views voor de Modbus webapp.
 """
 
+import logging
 from datetime import timedelta
 
 from django.contrib.auth.decorators import login_required
@@ -12,18 +13,37 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 
-from .models import (Alarm, AlarmHistory, AuditLog, CalculatedRegister,
-                     DashboardGroup, DashboardWidget, Device, DeviceTemplate,
-                     ModbusInterface, Register, TrendData, TrendDataAggregated)
-from .serializers import (AlarmHistorySerializer, AlarmSerializer,
-                          AuditLogSerializer, CalculatedRegisterSerializer,
-                          DashboardGroupSerializer, DashboardWidgetSerializer,
-                          DeviceListSerializer, DeviceSerializer,
-                          DeviceTemplateSerializer,
-                          ModbusInterfaceListSerializer,
-                          ModbusInterfaceSerializer, RegisterListSerializer,
-                          RegisterSerializer, TrendDataAggregatedSerializer,
-                          TrendDataSerializer)
+from .models import (
+    Alarm,
+    AlarmHistory,
+    AuditLog,
+    CalculatedRegister,
+    DashboardGroup,
+    DashboardWidget,
+    Device,
+    DeviceTemplate,
+    ModbusInterface,
+    Register,
+    TrendData,
+    TrendDataAggregated,
+)
+from .serializers import (
+    AlarmHistorySerializer,
+    AlarmSerializer,
+    AuditLogSerializer,
+    CalculatedRegisterSerializer,
+    DashboardGroupSerializer,
+    DashboardWidgetSerializer,
+    DeviceListSerializer,
+    DeviceSerializer,
+    DeviceTemplateSerializer,
+    ModbusInterfaceListSerializer,
+    ModbusInterfaceSerializer,
+    RegisterListSerializer,
+    RegisterSerializer,
+    TrendDataAggregatedSerializer,
+    TrendDataSerializer,
+)
 from .services.register_service import RegisterService
 
 
@@ -177,8 +197,15 @@ class ModbusInterfaceViewSet(viewsets.ModelViewSet):
             )
         except Exception as e:
             interface.update_status("error")
+            logging.getLogger(__name__).error(
+                f"Connection test failed for interface {interface.name}: {str(e)}",
+                exc_info=True,
+            )
             return Response(
-                {"status": "error", "message": str(e)},
+                {
+                    "status": "error",
+                    "message": "Verbinding testen mislukt. Controleer de interface instellingen.",
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
         finally:
@@ -292,8 +319,14 @@ class DeviceViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
         except Exception as e:
+            logging.getLogger(__name__).error(
+                f"Failed to create registers from template: {str(e)}", exc_info=True
+            )
             return Response(
-                {"status": "error", "message": str(e)},
+                {
+                    "status": "error",
+                    "message": "Kon registers niet aanmaken van template. Controleer de template configuratie.",
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -369,8 +402,14 @@ class RegisterViewSet(viewsets.ModelViewSet):
                 }
             )
         except Exception as e:
+            logging.getLogger(__name__).error(
+                f"Failed to read register {register.name}: {str(e)}", exc_info=True
+            )
             return Response(
-                {"status": "error", "message": str(e)},
+                {
+                    "status": "error",
+                    "message": "Kon register niet lezen. Controleer de verbinding en register configuratie.",
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -408,8 +447,15 @@ class RegisterViewSet(viewsets.ModelViewSet):
                 }
             )
         except Exception as e:
+            logging.getLogger(__name__).error(
+                f"Failed to write value to register {register.name}: {str(e)}",
+                exc_info=True,
+            )
             return Response(
-                {"status": "error", "message": str(e)},
+                {
+                    "status": "error",
+                    "message": "Kon waarde niet schrijven naar register. Controleer of het register schrijfbaar is en de waarde geldig is.",
+                },
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
