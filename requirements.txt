@@ -1,7 +1,7 @@
 amqp==5.3.1
 anyio==4.12.0
 asgiref==3.11.0
-asteval==0.9.31
+asteval==1.0.6
 attrs==25.4.0
 autobahn==25.12.1
 Automat==25.4.16
@@ -21,7 +21,7 @@ coverage==7.13.0
 cron_descriptor==2.0.6
 cryptography==46.0.3
 daphne==4.0.0
-Django==5.0.7
+Django==5.1.15
 django-celery-beat==2.7.0
 django-cors-headers==4.3.1
 django-timezone-field==7.2.1
