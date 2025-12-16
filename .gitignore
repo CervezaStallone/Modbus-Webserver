@@ -71,10 +71,6 @@ htmlcov/
 coverage.xml
 *.cover
 .hypothesis/
-tests/
-test_*.py
-pytest.ini
-**/tests.py
 
 # Celery
 celerybeat-schedule
