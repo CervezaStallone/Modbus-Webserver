@@ -9,25 +9,16 @@ from celery import shared_task
 from django.db import transaction
 from django.utils import timezone
 
-from modbus_app.models import (
-    Alarm,
-    AlarmHistory,
-    Device,
-    ModbusInterface,
-    Register,
-    TrendData,
-    TrendDataAggregated,
-)
+from modbus_app.models import (Alarm, AlarmHistory, Device, ModbusInterface,
+                               Register, TrendData, TrendDataAggregated)
 from modbus_app.services.alarm_checker import AlarmChecker
 from modbus_app.services.connection_manager import get_connection_manager
 from modbus_app.services.data_aggregator import DataAggregator
 from modbus_app.services.register_service import get_register_service
-from modbus_app.utils.websocket_broadcast import (
-    broadcast_alarm,
-    broadcast_connection_status,
-    broadcast_device_update,
-    broadcast_register_update,
-)
+from modbus_app.utils.websocket_broadcast import (broadcast_alarm,
+                                                  broadcast_connection_status,
+                                                  broadcast_device_update,
+                                                  broadcast_register_update)
 
 logger = logging.getLogger(__name__)
 

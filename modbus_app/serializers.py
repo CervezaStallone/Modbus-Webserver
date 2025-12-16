@@ -5,20 +5,9 @@ DRF Serializers voor alle Modbus models.
 from django.utils import timezone
 from rest_framework import serializers
 
-from .models import (
-    Alarm,
-    AlarmHistory,
-    AuditLog,
-    CalculatedRegister,
-    DashboardGroup,
-    DashboardWidget,
-    Device,
-    DeviceTemplate,
-    ModbusInterface,
-    Register,
-    TrendData,
-    TrendDataAggregated,
-)
+from .models import (Alarm, AlarmHistory, AuditLog, CalculatedRegister,
+                     DashboardGroup, DashboardWidget, Device, DeviceTemplate,
+                     ModbusInterface, Register, TrendData, TrendDataAggregated)
 
 
 class ModbusInterfaceSerializer(serializers.ModelSerializer):
