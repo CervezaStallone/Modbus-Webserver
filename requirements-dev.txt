@@ -18,7 +18,7 @@ ipdb==0.13.13
 black==24.3.0
 flake8==7.0.0
 isort==5.13.2
-mypy==1.8.0
+mypy==1.19.1
 django-stubs==4.2.7
 
 # Celery monitoring
