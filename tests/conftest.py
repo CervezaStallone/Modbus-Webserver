@@ -3,21 +3,6 @@ Pytest configuration and fixtures.
 """
 
 import pytest
-from django.conf import settings
-
-
-@pytest.fixture(scope='session')
-def django_db_setup():
-    """Setup test database."""
-    settings.DATABASES['default'] = {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': ':memory:',
-        'ATOMIC_REQUESTS': True,
-        'OPTIONS': {
-            'timeout': 20,
-            'check_same_thread': False,
-        },
-    }
 
 
 @pytest.fixture
