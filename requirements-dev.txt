@@ -2,9 +2,9 @@
 -r requirements.txt
 
 # Testing
-pytest==9.0.2
+pytest==8.3.4
 pytest-django==4.11.1
-pytest-cov==7.0.0
+pytest-cov==6.0.0
 pytest-asyncio==0.24.0
 factory-boy==3.3.3
 faker==38.2.0
