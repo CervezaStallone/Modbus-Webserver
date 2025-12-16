@@ -50,7 +50,7 @@ Enhancement suggestions are tracked as GitHub issues. When creating an enhanceme
 
 ### Prerequisites
 
-- Python 3.10 or higher
+- Python 3.11 or higher
 - Redis server
 - Git
 
