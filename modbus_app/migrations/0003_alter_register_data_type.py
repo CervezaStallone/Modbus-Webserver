@@ -6,13 +6,25 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('modbus_app', '0002_alter_alarmhistory_options_and_more'),
+        ("modbus_app", "0002_alter_alarmhistory_options_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='register',
-            name='data_type',
-            field=models.CharField(choices=[('AUTO', 'Auto Detect'), ('INT16', '16-bit Signed Integer'), ('UINT16', '16-bit Unsigned Integer'), ('INT32', '32-bit Signed Integer'), ('UINT32', '32-bit Unsigned Integer'), ('FLOAT32', '32-bit Float'), ('BOOL', 'Boolean')], default='UINT16', max_length=10),
+            model_name="register",
+            name="data_type",
+            field=models.CharField(
+                choices=[
+                    ("AUTO", "Auto Detect"),
+                    ("INT16", "16-bit Signed Integer"),
+                    ("UINT16", "16-bit Unsigned Integer"),
+                    ("INT32", "32-bit Signed Integer"),
+                    ("UINT32", "32-bit Unsigned Integer"),
+                    ("FLOAT32", "32-bit Float"),
+                    ("BOOL", "Boolean"),
+                ],
+                default="UINT16",
+                max_length=10,
+            ),
         ),
     ]

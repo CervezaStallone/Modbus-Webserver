@@ -6,18 +6,20 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('modbus_app', '0003_alter_register_data_type'),
+        ("modbus_app", "0003_alter_register_data_type"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='register',
-            name='last_read',
-            field=models.DateTimeField(blank=True, help_text='Last successful read', null=True),
+            model_name="register",
+            name="last_read",
+            field=models.DateTimeField(
+                blank=True, help_text="Last successful read", null=True
+            ),
         ),
         migrations.AddField(
-            model_name='register',
-            name='last_value',
-            field=models.FloatField(blank=True, help_text='Last read value', null=True),
+            model_name="register",
+            name="last_value",
+            field=models.FloatField(blank=True, help_text="Last read value", null=True),
         ),
     ]

@@ -6,83 +6,92 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('modbus_app', '0001_initial'),
+        ("modbus_app", "0001_initial"),
     ]
 
     operations = [
         migrations.AlterModelOptions(
-            name='alarmhistory',
-            options={'ordering': ['-triggered_at'], 'verbose_name_plural': 'Alarm History'},
+            name="alarmhistory",
+            options={
+                "ordering": ["-triggered_at"],
+                "verbose_name_plural": "Alarm History",
+            },
         ),
         migrations.RemoveIndex(
-            model_name='alarm',
-            name='modbus_app__active_a555cc_idx',
+            model_name="alarm",
+            name="modbus_app__active_a555cc_idx",
         ),
         migrations.RemoveIndex(
-            model_name='alarmhistory',
-            name='modbus_app__alarm_i_cba2ff_idx',
+            model_name="alarmhistory",
+            name="modbus_app__alarm_i_cba2ff_idx",
         ),
         migrations.RenameField(
-            model_name='alarm',
-            old_name='triggered_at',
-            new_name='last_triggered',
+            model_name="alarm",
+            old_name="triggered_at",
+            new_name="last_triggered",
         ),
         migrations.RenameField(
-            model_name='alarmhistory',
-            old_name='value',
-            new_name='trigger_value',
+            model_name="alarmhistory",
+            old_name="value",
+            new_name="trigger_value",
         ),
         migrations.RenameField(
-            model_name='alarmhistory',
-            old_name='timestamp',
-            new_name='triggered_at',
+            model_name="alarmhistory",
+            old_name="timestamp",
+            new_name="triggered_at",
         ),
         migrations.RemoveField(
-            model_name='alarm',
-            name='acknowledged',
+            model_name="alarm",
+            name="acknowledged",
         ),
         migrations.RemoveField(
-            model_name='alarm',
-            name='active',
+            model_name="alarm",
+            name="active",
         ),
         migrations.RemoveField(
-            model_name='alarmhistory',
-            name='event_type',
+            model_name="alarmhistory",
+            name="event_type",
         ),
         migrations.RemoveField(
-            model_name='alarmhistory',
-            name='message',
+            model_name="alarmhistory",
+            name="message",
         ),
         migrations.AddField(
-            model_name='alarmhistory',
-            name='acknowledged',
+            model_name="alarmhistory",
+            name="acknowledged",
             field=models.BooleanField(default=False),
         ),
         migrations.AddField(
-            model_name='alarmhistory',
-            name='acknowledged_at',
+            model_name="alarmhistory",
+            name="acknowledged_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddField(
-            model_name='alarmhistory',
-            name='acknowledged_by',
+            model_name="alarmhistory",
+            name="acknowledged_by",
             field=models.CharField(blank=True, max_length=100),
         ),
         migrations.AddField(
-            model_name='alarmhistory',
-            name='cleared_at',
+            model_name="alarmhistory",
+            name="cleared_at",
             field=models.DateTimeField(blank=True, null=True),
         ),
         migrations.AddIndex(
-            model_name='alarm',
-            index=models.Index(fields=['last_triggered'], name='modbus_app__last_tr_80a180_idx'),
+            model_name="alarm",
+            index=models.Index(
+                fields=["last_triggered"], name="modbus_app__last_tr_80a180_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='alarmhistory',
-            index=models.Index(fields=['alarm', '-triggered_at'], name='modbus_app__alarm_i_7bb3cd_idx'),
+            model_name="alarmhistory",
+            index=models.Index(
+                fields=["alarm", "-triggered_at"], name="modbus_app__alarm_i_7bb3cd_idx"
+            ),
         ),
         migrations.AddIndex(
-            model_name='alarmhistory',
-            index=models.Index(fields=['cleared_at'], name='modbus_app__cleared_72f296_idx'),
+            model_name="alarmhistory",
+            index=models.Index(
+                fields=["cleared_at"], name="modbus_app__cleared_72f296_idx"
+            ),
         ),
     ]
