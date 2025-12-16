@@ -3,7 +3,7 @@
 
 # Testing
 pytest==7.4.4
-pytest-django==4.7.0
+pytest-django==4.11.1
 pytest-cov==4.1.0
 pytest-asyncio==0.23.3
 factory-boy==3.3.0
