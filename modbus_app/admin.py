@@ -4,20 +4,11 @@ Django admin configuration for modbus_app models.
 
 from django.contrib import admin
 
-from modbus_app.models import (
-    Alarm,
-    AlarmHistory,
-    AuditLog,
-    CalculatedRegister,
-    DashboardGroup,
-    DashboardWidget,
-    Device,
-    DeviceTemplate,
-    ModbusInterface,
-    Register,
-    TrendData,
-    TrendDataAggregated,
-)
+from modbus_app.models import (Alarm, AlarmHistory, AuditLog,
+                               CalculatedRegister, DashboardGroup,
+                               DashboardWidget, Device, DeviceTemplate,
+                               ModbusInterface, Register, TrendData,
+                               TrendDataAggregated)
 
 
 @admin.register(ModbusInterface)

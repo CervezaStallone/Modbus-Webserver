@@ -13,37 +13,18 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 
-from .models import (
-    Alarm,
-    AlarmHistory,
-    AuditLog,
-    CalculatedRegister,
-    DashboardGroup,
-    DashboardWidget,
-    Device,
-    DeviceTemplate,
-    ModbusInterface,
-    Register,
-    TrendData,
-    TrendDataAggregated,
-)
-from .serializers import (
-    AlarmHistorySerializer,
-    AlarmSerializer,
-    AuditLogSerializer,
-    CalculatedRegisterSerializer,
-    DashboardGroupSerializer,
-    DashboardWidgetSerializer,
-    DeviceListSerializer,
-    DeviceSerializer,
-    DeviceTemplateSerializer,
-    ModbusInterfaceListSerializer,
-    ModbusInterfaceSerializer,
-    RegisterListSerializer,
-    RegisterSerializer,
-    TrendDataAggregatedSerializer,
-    TrendDataSerializer,
-)
+from .models import (Alarm, AlarmHistory, AuditLog, CalculatedRegister,
+                     DashboardGroup, DashboardWidget, Device, DeviceTemplate,
+                     ModbusInterface, Register, TrendData, TrendDataAggregated)
+from .serializers import (AlarmHistorySerializer, AlarmSerializer,
+                          AuditLogSerializer, CalculatedRegisterSerializer,
+                          DashboardGroupSerializer, DashboardWidgetSerializer,
+                          DeviceListSerializer, DeviceSerializer,
+                          DeviceTemplateSerializer,
+                          ModbusInterfaceListSerializer,
+                          ModbusInterfaceSerializer, RegisterListSerializer,
+                          RegisterSerializer, TrendDataAggregatedSerializer,
+                          TrendDataSerializer)
 from .services.register_service import RegisterService
 
 
