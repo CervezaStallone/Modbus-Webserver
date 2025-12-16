@@ -71,6 +71,7 @@ class RegisterSerializer(serializers.ModelSerializer):
     device_name = serializers.CharField(source='device.name', read_only=True)
     function_code_display = serializers.SerializerMethodField()
     current_value = serializers.SerializerMethodField()
+    last_value = serializers.FloatField(read_only=True, required=False)
     
     class Meta:
         model = Register
@@ -80,9 +81,9 @@ class RegisterSerializer(serializers.ModelSerializer):
             'byte_order', 'word_order', 'count',
             'conversion_factor', 'conversion_offset', 'unit',
             'enabled', 'writable',
-            'current_value', 'created_at', 'updated_at'
+            'current_value', 'last_value', 'created_at', 'updated_at'
         ]
-        read_only_fields = ['created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at', 'last_value']
     
     def get_function_code_display(self, obj):
         """Geef beschrijving van function code."""
@@ -144,20 +145,50 @@ class DashboardWidgetSerializer(serializers.ModelSerializer):
     """Serializer voor DashboardWidget."""
     
     register_name = serializers.CharField(source='register.name', read_only=True)
+    register_unit = serializers.CharField(source='register.unit', read_only=True)
     widget_type_display = serializers.CharField(source='get_widget_type_display', read_only=True)
+    current_value = serializers.SerializerMethodField()
+    config = serializers.SerializerMethodField()
+    order = serializers.IntegerField(source='row_position', required=False)
+    group = serializers.PrimaryKeyRelatedField(queryset=DashboardGroup.objects.all(), required=False, allow_null=True)
     
     class Meta:
         model = DashboardWidget
         fields = [
-            'id', 'group', 'register', 'register_name',
+            'id', 'group', 'register', 'register_name', 'register_unit',
             'widget_type', 'widget_type_display', 'title',
-            'column_position', 'row_position', 'width', 'height',
+            'column_position', 'row_position', 'width', 'height', 'order',
             'trend_enabled', 'sample_rate', 'aggregation_method', 'time_range',
             'chart_color', 'show_legend', 'y_axis_mode', 'y_axis_min', 'y_axis_max',
-            'decimal_places', 'show_unit', 'font_size',
+            'decimal_places', 'show_unit', 'font_size', 'config', 'current_value',
             'created_at', 'updated_at'
         ]
-        read_only_fields = ['created_at', 'updated_at']
+        read_only_fields = ['created_at', 'updated_at', 'current_value', 'register_name', 'register_unit', 'config']
+    
+    def get_current_value(self, obj):
+        """Get laatste waarde van register."""
+        try:
+            if obj.register:
+                # First try to get from Register's last_value field if it exists
+                if hasattr(obj.register, 'last_value') and obj.register.last_value is not None:
+                    return obj.register.last_value
+                # Otherwise try to get latest trend data
+                from .models import TrendData
+                latest = TrendData.objects.filter(register=obj.register).order_by('-timestamp').first()
+                if latest:
+                    return latest.value
+        except Exception as e:
+            pass
+        return None
+    
+    def get_config(self, obj):
+        """Bouw config dict uit individuele velden."""
+        return {
+            'unit': obj.register.unit if obj.register else '',
+            'decimal_places': obj.decimal_places,
+            'show_unit': obj.show_unit,
+            'chart_color': obj.chart_color
+        }
 
 
 class DashboardGroupSerializer(serializers.ModelSerializer):

@@ -26,6 +26,9 @@ curl -o static/js/bootstrap.bundle.min.js https://cdn.jsdelivr.net/npm/bootstrap
 
 # Chart.js
 curl -o static/js/chart.min.js https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js
+
+# ApexCharts (voor gauges, radial bars, etc.)
+curl -o static/js/apexcharts.min.js https://cdn.jsdelivr.net/npm/apexcharts@3.45.1/dist/apexcharts.min.js
 ```
 
 Of met wget:

@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'channels',
     'drf_spectacular',
+    'django_celery_beat',
     
     # Local apps
     'modbus_app',
@@ -185,8 +186,15 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = TIME_ZONE
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
-CELERY_WORKER_PREFETCH_MULTIPLIER = 4
-CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000
+
+# Windows-specific Celery settings (solo pool to avoid prefork issues)
+import sys
+if sys.platform == 'win32':
+    CELERY_WORKER_POOL = 'solo'
+    CELERY_WORKER_CONCURRENCY = 1
+else:
+    CELERY_WORKER_PREFETCH_MULTIPLIER = 4
+    CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000
 
 # Celery Beat Schedule
 from celery.schedules import crontab
@@ -194,7 +202,7 @@ from celery.schedules import crontab
 CELERY_BEAT_SCHEDULE = {
     'poll-all-devices': {
         'task': 'modbus_app.tasks.poll_all_devices',
-        'schedule': 5.0,  # Every 5 seconds
+        'schedule': 1.0,  # Every 1 second - checks which devices need polling
     },
     'aggregate-hourly': {
         'task': 'modbus_app.tasks.aggregate_trend_data',
@@ -214,7 +222,7 @@ CELERY_BEAT_SCHEDULE = {
     },
     'health-check-interfaces': {
         'task': 'modbus_app.tasks.health_check_interfaces',
-        'schedule': 30.0,  # Every 30 seconds
+        'schedule': 300.0,  # Every 5 minutes (reduced to avoid COM port conflicts)
     },
     'cleanup-old-data': {
         'task': 'modbus_app.tasks.cleanup_old_data',

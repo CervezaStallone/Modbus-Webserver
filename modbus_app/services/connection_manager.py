@@ -7,7 +7,6 @@ from typing import Dict, Optional
 from datetime import datetime, timedelta
 from django.utils import timezone
 from ..models import ModbusInterface
-from .modbus_driver import ModbusRTUDriver, ModbusTCPDriver
 
 logger = logging.getLogger(__name__)
 
@@ -57,23 +56,11 @@ class ConnectionManager:
     def _create_connection(self, interface: ModbusInterface):
         """Creëer nieuwe driver instance."""
         try:
-            if interface.protocol == 'RTU':
-                driver = ModbusRTUDriver(
-                    port=interface.port,
-                    baudrate=interface.baudrate or 9600,
-                    parity=interface.parity or 'N',
-                    stopbits=interface.stopbits or 1,
-                    bytesize=interface.bytesize or 8,
-                    timeout=interface.timeout
-                )
-            elif interface.protocol == 'TCP':
-                driver = ModbusTCPDriver(
-                    host=interface.host,
-                    tcp_port=interface.tcp_port or 502,
-                    timeout=interface.timeout
-                )
-            else:
-                raise ValueError(f"Onbekend protocol: {interface.protocol}")
+            # Import create_driver function
+            from .modbus_driver import create_driver
+            
+            # Create driver using factory function
+            driver = create_driver(interface)
             
             # Connecteer
             driver.connect()
@@ -148,9 +135,9 @@ class ConnectionManager:
             # Probeer een simpele test read (address 0, 1 register)
             # Dit is low-impact maar test wel de connectie
             result = driver.read_holding_registers(
+                slave_id=1,  # Test met slave 1
                 address=0,
-                count=1,
-                slave=1  # Test met slave 1
+                count=1
             )
             
             # Als we hier komen zonder exception is de interface bereikbaar

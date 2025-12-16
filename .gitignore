@@ -35,6 +35,11 @@ venv.bak/
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
+db.sqlite3-shm
+db.sqlite3-wal
+test_db.sqlite3
+test_db.sqlite3-shm
+test_db.sqlite3-wal
 /media
 /staticfiles
 /static_root
@@ -69,7 +74,13 @@ coverage.xml
 
 # Celery
 celerybeat-schedule
+celerybeat-schedule.db
+celerybeat-schedule.db-shm
+celerybeat-schedule.db-wal
+celerybeat-schedule-shm
+celerybeat-schedule-wal
 celerybeat.pid
+*.pid
 
 # Redis
 dump.rdb

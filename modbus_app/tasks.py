@@ -60,6 +60,11 @@ def poll_device_registers(self, device_id):
             try:
                 register = Register.objects.get(id=register_id)
                 
+                # Update register's last_value and last_read
+                register.last_value = converted_value
+                register.last_read = now
+                register.save(update_fields=['last_value', 'last_read'])
+                
                 # Create trend data entry
                 trend_data = TrendData(
                     register_id=register_id,
@@ -118,6 +123,10 @@ def poll_all_devices():
                 should_poll = True
         
         if should_poll:
+            # Update last_poll before triggering to prevent duplicate polls
+            device.last_poll = now
+            device.save(update_fields=['last_poll'])
+            
             # Trigger device poll task
             poll_device_registers.delay(device.id)
 

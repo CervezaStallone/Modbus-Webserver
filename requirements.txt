@@ -18,10 +18,13 @@ click-repl==0.3.0
 colorama==0.4.6
 constantly==23.10.4
 coverage==7.13.0
+cron_descriptor==2.0.6
 cryptography==46.0.3
 daphne==4.0.0
 Django==5.0
+django-celery-beat==2.7.0
 django-cors-headers==4.3.1
+django-timezone-field==7.2.1
 djangorestframework==3.14.0
 drf-spectacular==0.27.0
 factory_boy==3.3.3
@@ -52,6 +55,7 @@ pyserial==3.5
 pytest==9.0.2
 pytest-cov==7.0.0
 pytest-django==4.11.1
+python-crontab==3.3.0
 python-dateutil==2.9.0.post0
 python-dotenv==1.0.0
 pytz==2024.1

@@ -311,12 +311,35 @@ class RegisterViewSet(viewsets.ModelViewSet):
                     'message': 'Kon register niet lezen'
                 }, status=status.HTTP_400_BAD_REQUEST)
             
+            # Update last_value and last_read
+            now = timezone.now()
+            register.last_value = converted_value
+            register.last_read = now
+            register.save(update_fields=['last_value', 'last_read'])
+            
+            # Also save to TrendData for history
+            from .models import TrendData
+            TrendData.objects.create(
+                register=register,
+                value=converted_value,
+                timestamp=now
+            )
+            
+            # Broadcast update via WebSocket
+            from .utils.websocket_broadcast import broadcast_register_update
+            broadcast_register_update(
+                register_id=register.id,
+                value=converted_value,
+                timestamp=now,
+                unit=register.unit
+            )
+            
             return Response({
                 'status': 'success',
                 'raw_value': raw_value,
                 'value': converted_value,
                 'unit': register.unit,
-                'timestamp': timezone.now()
+                'timestamp': now
             })
         except Exception as e:
             return Response({
@@ -443,6 +466,19 @@ class DashboardWidgetViewSet(viewsets.ModelViewSet):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [IsAdminUser()]
         return super().get_permissions()
+    
+    def perform_create(self, serializer):
+        """Create widget, auto-create default group if needed."""
+        # Get or create default group if no group provided
+        group = serializer.validated_data.get('group')
+        if not group:
+            default_group, _ = DashboardGroup.objects.get_or_create(
+                name='Standaard',
+                defaults={'description': 'Standaard dashboard groep', 'row_order': 0}
+            )
+            serializer.save(group=default_group)
+        else:
+            serializer.save()
 
 
 class AlarmViewSet(viewsets.ModelViewSet):

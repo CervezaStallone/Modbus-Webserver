@@ -33,7 +33,7 @@ def broadcast_register_update(register_id, value, timestamp, unit=''):
         async_to_sync(channel_layer.group_send)(
             'dashboard',
             {
-                'type': 'register.update',
+                'type': 'register_update',
                 'data': data,
             }
         )

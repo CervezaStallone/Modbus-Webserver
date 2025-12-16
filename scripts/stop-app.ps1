@@ -51,7 +51,11 @@ if ($celeryBeatProcesses) {
 # Stop Redis
 Write-ColoredMessage "⏳ Redis stoppen..." "Yellow"
 try {
-    if (Get-Process -Name redis-server -ErrorAction SilentlyContinue) {
+    $redisService = Get-Service -Name Redis -ErrorAction SilentlyContinue
+    if ($redisService -and $redisService.Status -eq 'Running') {
+        Stop-Service -Name Redis -Force
+        Write-ColoredMessage "✓ Redis service gestopt" "Green"
+    } elseif (Get-Process -Name redis-server -ErrorAction SilentlyContinue) {
         & redis-cli shutdown 2>&1 | Out-Null
         Write-ColoredMessage "✓ Redis gestopt" "Green"
     } else {

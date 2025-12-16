@@ -1,0 +1,248 @@
+================================================================================
+CURRENT STATE - Modbus Webserver Project
+Datum: 16 december 2025, 08:47
+================================================================================
+
+PROBLEEM DAT WE HEBBEN OPGELOST:
+-----------------------------------
+- Automatische Modbus polling werkte niet op het ingestelde interval
+- Device polling interval was 2 seconden, maar polling gebeurde maar elke 5+ seconden
+- Redis werd niet herkend door start script
+- PowerShell script had encoding problemen (Nederlandse tekst)
+- Celery Beat werkte niet correct in Hidden window mode
+
+HUIDIGE STATUS - ALLES WERKT! ✓
+-----------------------------------
+✅ Automatische polling werkt op 2-seconden interval
+✅ Data wordt succesvol gelezen van Modbus device (COM11)
+✅ TrendData wordt opgeslagen in database (~20 metingen per 30 seconden)
+✅ Django draait op http://localhost:8000/
+✅ Celery Worker en Beat draaien in geminimaliseerde windows
+✅ Redis Windows Service gedetecteerd en wordt gebruikt
+✅ WebSocket verbinding werkt voor real-time updates
+
+LAATSTE METINGEN (verificatie dat alles werkt):
+-----------------------------------
+Temperatuur: 21.5°C
+Humidity: 38.7-38.8°C
+Frequentie: ~elke 2-3 seconden (conform ingesteld interval)
+
+RECENTE WIJZIGINGEN:
+-----------------------------------
+1. django-celery-beat 2.7.0 geïnstalleerd
+   - requirements.txt: django-celery-beat==2.7.0 toegevoegd
+   - settings.py: django_celery_beat aan INSTALLED_APPS toegevoegd
+   - Database migraties uitgevoerd (21 migraties)
+
+2. Celery Beat Schedule optimalisatie
+   - settings.py: poll-all-devices interval: 5.0s → 1.0s
+   - Dit zorgt dat de checker elke seconde kijkt welke devices gepolled moeten worden
+
+3. tasks.py verbeterd
+   - last_poll wordt NU bijgewerkt VOOR polling (voorkomt dubbele polls)
+   - Functie: poll_all_devices checkt elk device of het tijd is om te pollen
+
+4. start-app.ps1 grote verbetering
+   - Redis detectie: Herkent nu Windows Service "Redis"
+   - Encoding fix: Nederlandse tekst vervangen door Engels (quote terminator probleem)
+   - WindowStyle: Hidden → Minimized voor Worker en Beat (Hidden werkte niet!)
+   - Log redirection verwijderd bij Worker/Beat (veroorzaakte problemen)
+   - Cleanup functie verbeterd: Gebruikt saved PIDs, fallback mechanisme
+
+5. Database
+   - Migration 0004 toegepast: Register.last_value en Register.last_read velden
+   - django_celery_beat tabellen aangemaakt
+   - 8 Periodic tasks geconfigureerd in database
+
+BELANGRIJKE CONFIGURATIE:
+-----------------------------------
+Device: XY-MD01
+- Interface: COM11 (Modbus RTU)
+- Slave ID: 1
+- Polling interval: 2 seconden
+- Status: Online, polling actief
+
+Registers:
+- Temperatuur: Address 1, FLOAT32, unit: °C
+- Humidity: Address 3, FLOAT32, unit: °C
+
+Celery configuratie:
+- Worker pool: solo (Windows-specific)
+- Beat scheduler: DatabaseScheduler (django_celery_beat)
+- Redis broker: localhost:6379/0
+
+SERVICES DIE DRAAIEN:
+-----------------------------------
+1. Redis Windows Service (poort 6379)
+2. Django/Daphne ASGI server (poort 8000)
+3. Celery Worker (PID variabel, Minimized window)
+4. Celery Beat (PID variabel, Minimized window)
+
+Start commando: .\scripts\start-app.ps1
+
+BEKENDE ISSUES / OPMERKINGEN:
+-----------------------------------
+- COM11 port conflicts kunnen nog voorkomen als meerdere processen proberen te lezen
+  Oplossing: Health check interval verhoogd naar 300 seconden (5 minuten)
+  
+- Celery Worker/Beat MOETEN in Minimized window draaien (niet Hidden)
+  Reden: Hidden WindowStyle veroorzaakt problemen met task execution
+  
+- celerybeat-schedule.db bestand wordt aangemaakt in project root
+  Dit is normaal gedrag voor django-celery-beat
+
+TESTEN / VERIFICATIE:
+-----------------------------------
+Om te controleren of alles werkt:
+
+1. Check Beat tasks:
+   python test_beat.py | Select-String -Pattern "poll-all"
+   
+2. Check recente data:
+   python manage.py shell -c "from modbus_app.models import TrendData; from django.utils import timezone; from datetime import timedelta; print(TrendData.objects.filter(timestamp__gte=timezone.now()-timedelta(seconds=30)).count())"
+   
+3. Check device status:
+   python manage.py shell -c "from modbus_app.models import Device; d = Device.objects.first(); print(f'{d.name}: {d.connection_status}, last_poll={d.last_poll}')"
+
+4. Open dashboard: http://localhost:8000/
+
+BESTANDEN AANGEPAST:
+-----------------------------------
+- requirements.txt (django-celery-beat toegevoegd)
+- modbus_webserver/settings.py (INSTALLED_APPS, CELERY_BEAT_SCHEDULE)
+- modbus_app/tasks.py (last_poll update timing)
+- scripts/start-app.ps1 (Redis detectie, WindowStyle, cleanup)
+- modbus_app/models.py (Migration 0004 voor last_value/last_read)
+
+VOLGENDE STAPPEN (optioneel):
+-----------------------------------
+- Dashboard real-time updates verder testen
+- Alarm functionaliteit testen
+- Data aggregatie (hourly/daily) monitoren
+- Eventueel polling interval verder fine-tunen per device
+
+BELANGRIJKE COMMANDO'S:
+-----------------------------------
+Start:  .\scripts\start-app.ps1
+Stop:   Ctrl+C in terminal waar script draait, kies optie 1 of 2
+
+Monitor Beat:     Kijk in geminimaliseerd Celery Beat window
+Monitor Worker:   Kijk in geminimaliseerd Celery Worker window
+Monitor Django:   Terminal waar start-app.ps1 draait
+
+================================================================================
+CONCLUSIE: Automatische Modbus polling werkt perfect op 2-seconden interval!
+================================================================================
+
+================================================================================
+UPDATE - Widget Customization & Real-time Updates
+Datum: 16 december 2025, 09:45
+================================================================================
+
+NIEUWE FEATURES GEÏMPLEMENTEERD:
+-----------------------------------
+1. ✅ Complete widget customization systeem
+   - Settings modal met kleur picker, min/max, decimalen, breedte, hoogte
+   - Instellingen worden opgeslagen en toegepast op charts
+   - ⚙️ knop op elke widget voor settings
+
+2. ✅ Drag-and-drop widget reordering
+   - Widgets kunnen gesleept worden in edit mode
+   - Volgorde wordt persistent opgeslagen via API
+
+3. ✅ Handmatig register lezen
+   - 🔄 groene refresh knop op elke widget
+   - readRegisterNow() functie voor on-demand polling
+
+4. ✅ Historische data in line charts
+   - loadHistoricalData() laadt laatste 20 datapunten
+   - Gebruikt /api/v1/registers/{id}/trend_data/?hours=1
+   - Charts tonen nu echte trend lijnen
+
+5. ✅ ApexCharts NaN errors opgelost
+   - Null-waarde handling in initializeWidgetChart()
+   - Gauge percentage conversie op basis van min/max settings
+
+6. ✅ Register.last_value wordt nu geüpdatet
+   - modbus_app/tasks.py: poll_device_registers() update last_value/last_read
+   - Widgets tonen nu actuele waarden (Temperatuur: 21.8°C, Humidity: 38.0%)
+
+OPEN ISSUES / TODO:
+-----------------------------------
+⚠️ Real-time WebSocket updates
+   - WebSocket verbinding werkt ("WebSocket connected")
+   - Broadcast wordt verzonden vanuit polling task
+   - Updates komen mogelijk niet aan in dashboard
+   - TODO: Browser console checken op inkomende berichten
+
+⚠️ Waarden dashboard vs COM port
+   - Conversion factor = 0.1 voor beide registers
+   - Mogelijke mismatch met verwachte waarden
+   - TODO: Verificatie conversion_factor instellingen
+
+BESTANDEN GEWIJZIGD:
+-----------------------------------
+1. modbus_app/templates/dashboard/index.html
+   - Widget settings modal HTML
+   - editWidgetSettings(), saveWidgetSettings()
+   - Drag-and-drop handlers (handleDragStart/Over/Drop/End)
+   - readRegisterNow() voor handmatig lezen
+   - loadHistoricalData() voor trend data
+   - Verbeterde null-handling in initializeWidgetChart()
+
+2. modbus_app/tasks.py
+   - poll_device_registers(): register.last_value update toegevoegd
+   - Lines 60-62: register.save(update_fields=['last_value', 'last_read'])
+
+3. modbus_app/models.py (migration 0004)
+   - Register: last_value en last_read velden toegevoegd
+
+4. modbus_app/serializers.py
+   - DashboardWidgetSerializer: alle settings velden
+
+5. modbus_app/views.py
+   - read_now endpoint: update last_value, broadcast WebSocket
+
+TECHNISCHE DETAILS:
+-----------------------------------
+Widget Settings (⚙️):
+- title, width (3-12 col), height (150-800px)
+- chart_color (hex), y_axis_min/max
+- decimal_places (0-6), show_unit (bool)
+
+Widget Actions:
+- 🔄 readRegisterNow() - Manual read
+- ⚙️ editWidgetSettings() - Settings
+- 🗑️ deleteWidget() - Remove
+
+Real-time Pipeline:
+- Celery Beat → poll_all_devices (1s interval)
+- poll_device_registers() → Register.last_value update
+- broadcast_register_update() → WebSocket
+- DashboardConsumer → handleRealtimeUpdate()
+- updateWidgetValue() → ApexCharts.updateSeries()
+
+DATABASE STATUS:
+-----------------------------------
+- TrendData records: 2286 (polling werkt!)
+- Registers: 2 (Temperatuur 21.8°C, Humidity 38.0%)
+- last_value wordt nu correct geüpdatet
+- last_read timestamp wordt bijgehouden
+
+VOLGENDE SESSIE:
+-----------------------------------
+1. Debug WebSocket real-time updates
+   - Browser console F12 checken
+   - Inkomende berichten monitoren
+   
+2. Test widget customization volledig
+   - Kleur, min/max, decimalen
+   - Drag-and-drop in edit mode
+   
+3. Verifieer historische data in line charts
+   - Smooth trend lijn met 20 punten
+   - Real-time updates zichtbaar
+
+4. Conversion factor verificatie
+   - Check of 0.1 correct is voor XY-MD01
+

@@ -2,22 +2,35 @@
 
 {% block title %}Dashboard Layout - Modbus Webserver{% endblock %}
 
+{% block page_title %}Dashboard Layout{% endblock %}
+
 {% block content %}
-<div class="container-fluid">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1>Dashboard Layout</h1>
-        <button class="btn btn-primary" id="addGroupBtn">
-            <i class="bi bi-plus-circle"></i> Groep Toevoegen
-        </button>
-    </div>
+<div class="alert alert-info mb-4">
+    <i class="bi bi-info-circle"></i> 
+    <strong>Tip:</strong> Je kunt widgets direct toevoegen via het hoofddashboard met de "Bewerk Mode" knop. 
+    Deze pagina is voor geavanceerde layout aanpassingen.
+</div>
 
-    <div class="alert alert-info">
-        <i class="bi bi-info-circle"></i> Configureer hier de layout van je dashboard met groepen en widgets.
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title">Snelle Acties</h5>
+                <div class="d-flex gap-2">
+                    <a href="/" class="btn btn-primary">
+                        <i class="bi bi-speedometer2"></i> Ga naar Dashboard
+                    </a>
+                    <button class="btn btn-outline-secondary" onclick="window.location.reload()">
+                        <i class="bi bi-arrow-clockwise"></i> Vernieuw
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
+</div>
 
-    <div id="dashboardGroups" class="row">
-        <!-- Groups will be loaded here -->
-    </div>
+<div id="dashboardGroups" class="row">
+    <!-- Groups will be loaded here -->
 </div>
 
 <!-- Add/Edit Group Modal -->
@@ -114,7 +127,41 @@
 {% endblock %}
 
 {% block extra_js %}
+{% csrf_token %}
 <script>
+// Utility function for API calls
+function fetchAPI(url, options = {}) {
+    const csrftoken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+    const defaults = {
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrftoken
+        },
+        credentials: 'same-origin'
+    };
+    return fetch(url, { ...defaults, ...options });
+}
+
+// Notification function
+function showNotification(message, type = 'info') {
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+    alertDiv.style.position = 'fixed';
+    alertDiv.style.top = '20px';
+    alertDiv.style.right = '20px';
+    alertDiv.style.zIndex = '9999';
+    alertDiv.style.minWidth = '300px';
+    alertDiv.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    document.body.appendChild(alertDiv);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+
 let currentGroupId = null;
 let currentWidgetId = null;
 let groupModal, widgetModal;

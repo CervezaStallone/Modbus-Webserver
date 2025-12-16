@@ -7,6 +7,9 @@
     
     {% load static %}
     
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+    
     <!-- Bootstrap CSS (offline) -->
     <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
     
@@ -19,6 +22,7 @@
     <link rel="stylesheet" href="{% static 'css/widgets.css' %}">
     
     {% block extra_css %}{% endblock %}
+    {% block extra_head %}{% endblock %}
 </head>
 <body>
     <div class="d-flex" id="wrapper">
@@ -47,6 +51,9 @@
     
     <!-- Chart.js (offline) -->
     <script src="{% static 'js/chart.min.js' %}"></script>
+    
+    <!-- ApexCharts (offline) -->
+    <script src="{% static 'js/apexcharts.min.js' %}"></script>
     
     <!-- Custom JS -->
     <script src="{% static 'js/websocket.js' %}"></script>

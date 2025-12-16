@@ -209,7 +209,7 @@ class ModbusDriverBase(ABC):
         
         Args:
             registers: List of register values (16-bit integers)
-            data_type: Data type (INT16, UINT16, INT32, UINT32, FLOAT32, BOOL)
+            data_type: Data type (INT16, UINT16, INT32, UINT32, FLOAT32, BOOL, AUTO)
             byte_order: Byte order (big, little)
             word_order: Word order for 32-bit types (high_low, low_high)
         
@@ -217,6 +217,13 @@ class ModbusDriverBase(ABC):
             Converted value or None on error
         """
         try:
+            if data_type == 'AUTO':
+                # Auto-detect: default to UINT16 for single register, FLOAT32 for multiple
+                if len(registers) == 1:
+                    data_type = 'UINT16'
+                else:
+                    data_type = 'FLOAT32'
+            
             if data_type == 'BOOL':
                 return bool(registers[0])
             

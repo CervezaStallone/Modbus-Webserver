@@ -219,6 +219,8 @@ class Register(models.Model):
     # Settings
     enabled = models.BooleanField(default=True)
     writable = models.BooleanField(default=False)
+    last_value = models.FloatField(null=True, blank=True, help_text="Last read value")
+    last_read = models.DateTimeField(null=True, blank=True, help_text="Last successful read")
     
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)

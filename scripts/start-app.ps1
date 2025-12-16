@@ -57,49 +57,58 @@ function Stop-Services {
     Write-Host ""
     Write-ColoredMessage "⏳ Stoppen..." "Yellow"
     
-    # Stop Django
-    if ($script:DjangoPID) {
-        try {
-            Stop-Process -Id $script:DjangoPID -Force -ErrorAction Stop
-            Write-ColoredMessage "✓ Django gestopt" "Green"
-        } catch {
-            Write-Host "  Django al gestopt"
-        }
-    }
-    Get-Process -Name python -ErrorAction SilentlyContinue | Where-Object {
-        $_.CommandLine -like "*manage.py*runserver*"
-    } | Stop-Process -Force -ErrorAction SilentlyContinue
-    
-    # Stop Celery Worker
+    # Stop Celery Worker using saved PID
     if ($script:CeleryWorkerPID) {
         try {
-            Stop-Process -Id $script:CeleryWorkerPID -Force -ErrorAction Stop
-            Write-ColoredMessage "✓ Celery Worker gestopt" "Green"
+            $proc = Get-Process -Id $script:CeleryWorkerPID -ErrorAction SilentlyContinue
+            if ($proc) {
+                Stop-Process -Id $script:CeleryWorkerPID -Force -ErrorAction Stop
+                Write-ColoredMessage "✓ Celery Worker gestopt (PID: $script:CeleryWorkerPID)" "Green"
+            }
         } catch {
             Write-Host "  Celery Worker al gestopt"
         }
     }
-    Get-Process -Name celery -ErrorAction SilentlyContinue | Where-Object {
-        $_.CommandLine -like "*worker*"
-    } | Stop-Process -Force -ErrorAction SilentlyContinue
     
-    # Stop Celery Beat
+    # Stop Celery Beat using saved PID
     if ($script:CeleryBeatPID) {
         try {
-            Stop-Process -Id $script:CeleryBeatPID -Force -ErrorAction Stop
-            Write-ColoredMessage "✓ Celery Beat gestopt" "Green"
+            $proc = Get-Process -Id $script:CeleryBeatPID -ErrorAction SilentlyContinue
+            if ($proc) {
+                Stop-Process -Id $script:CeleryBeatPID -Force -ErrorAction Stop
+                Write-ColoredMessage "✓ Celery Beat gestopt (PID: $script:CeleryBeatPID)" "Green"
+            }
         } catch {
             Write-Host "  Celery Beat al gestopt"
         }
     }
-    Get-Process -Name celery -ErrorAction SilentlyContinue | Where-Object {
-        $_.CommandLine -like "*beat*"
-    } | Stop-Process -Force -ErrorAction SilentlyContinue
+    
+    # Fallback: stop any remaining celery processes
+    $celeryProcs = Get-Process -Name python* -ErrorAction SilentlyContinue | Where-Object {
+        try {
+            $cmdLine = (Get-CimInstance Win32_Process -Filter "ProcessId = $($_.Id)" -ErrorAction SilentlyContinue).CommandLine
+            $cmdLine -like "*celery*"
+        } catch {
+            $false
+        }
+    }
+    
+    if ($celeryProcs) {
+        $celeryProcs | Stop-Process -Force -ErrorAction SilentlyContinue
+        Write-ColoredMessage "✓ Extra Celery processen gestopt" "Green"
+    }
+    
+    # Django stops automatically when this script exits (foreground process)
+    Write-ColoredMessage "✓ Django gestopt" "Green"
     
     # Stop Redis if option 2
     if ($choice -eq "2") {
         try {
-            if (Get-Process -Name redis-server -ErrorAction SilentlyContinue) {
+            $redisService = Get-Service -Name Redis -ErrorAction SilentlyContinue
+            if ($redisService -and $redisService.Status -eq 'Running') {
+                Stop-Service -Name Redis -Force
+                Write-ColoredMessage "✓ Redis service gestopt" "Green"
+            } elseif (Get-Process -Name redis-server -ErrorAction SilentlyContinue) {
                 & redis-cli shutdown 2>&1 | Out-Null
                 Write-ColoredMessage "✓ Redis gestopt" "Green"
             } else {
@@ -112,12 +121,6 @@ function Stop-Services {
     
     Write-Host ""
     Write-ColoredMessage "Klaar!" "Green"
-    exit 0
-}
-
-# Register Ctrl+C handler
-$null = Register-EngineEvent -SourceIdentifier PowerShell.Exiting -Action {
-    Stop-Services -StopRedis "ask"
 }
 
 Write-Host "🚀 Starting Modbus Webserver - Alles inclusief app..."
@@ -163,28 +166,51 @@ if (Test-Path ".env.local") {
     }
 }
 
-# Check if Redis is installed
-if (-not (Get-Command redis-server -ErrorAction SilentlyContinue)) {
-    Write-ColoredMessage "❌ Redis is niet geïnstalleerd!" "Red"
-    Write-Host "Installeer Redis eerst:"
-    Write-Host "  Windows: Download van https://github.com/microsoftarchive/redis/releases"
-    Write-Host "  Of gebruik WSL/Docker voor Redis"
-    exit 1
-}
+# Check if Redis is running (process or service)
+$redisProcess = Get-Process -Name redis-server -ErrorAction SilentlyContinue
+$redisService = Get-Service -Name Redis -ErrorAction SilentlyContinue
+$redisCommand = Get-Command redis-server -ErrorAction SilentlyContinue
 
-# Check if Redis is running
-if (-not (Get-Process -Name redis-server -ErrorAction SilentlyContinue)) {
-    Write-ColoredMessage "⚙️  Redis starten..." "Yellow"
-    Start-Process -FilePath "redis-server" -ArgumentList "--port 6379" -WindowStyle Hidden
-    Start-Sleep -Seconds 2
-    if (Get-Process -Name redis-server -ErrorAction SilentlyContinue) {
-        Write-ColoredMessage "✓ Redis gestart" "Green"
-    } else {
-        Write-ColoredMessage "❌ Redis starten mislukt" "Red"
+# Check if Redis is already running
+if ($redisProcess) {
+    Write-ColoredMessage "✓ Redis draait al (proces)" "Green"
+} elseif ($redisService -and $redisService.Status -eq 'Running') {
+    Write-ColoredMessage "✓ Redis service draait al" "Green"
+} else {
+    # Redis is not running, try to start it
+    if (-not $redisService -and -not $redisCommand) {
+        Write-ColoredMessage "❌ Redis is niet geïnstalleerd!" "Red"
+        Write-Host "Installeer Redis eerst:"
+        Write-Host "  Windows: Download van https://redis.io/download"
+        Write-Host "  Of gebruik WSL/Docker voor Redis"
         exit 1
     }
-} else {
-    Write-ColoredMessage "✓ Redis draait al" "Green"
+    
+    # Try to start Redis
+    if ($redisService) {
+        # Start as Windows Service
+        Write-ColoredMessage "⚙️  Redis service starten..." "Yellow"
+        Start-Service -Name Redis
+        Start-Sleep -Seconds 2
+        $redisService = Get-Service -Name Redis -ErrorAction SilentlyContinue
+        if ($redisService.Status -eq 'Running') {
+            Write-ColoredMessage "✓ Redis service gestart" "Green"
+        } else {
+            Write-ColoredMessage "❌ Redis service starten mislukt" "Red"
+            exit 1
+        }
+    } elseif ($redisCommand) {
+        # Start as standalone process
+        Write-ColoredMessage "⚙️  Redis starten..." "Yellow"
+        Start-Process -FilePath "redis-server" -ArgumentList "--port 6379" -WindowStyle Hidden
+        Start-Sleep -Seconds 2
+        if (Get-Process -Name redis-server -ErrorAction SilentlyContinue) {
+            Write-ColoredMessage "✓ Redis gestart" "Green"
+        } else {
+            Write-ColoredMessage "❌ Redis starten mislukt" "Red"
+            exit 1
+        }
+    }
 }
 
 # Check and download static files if missing
@@ -294,34 +320,26 @@ Write-ColoredMessage "    Services starten...                " "Green"
 Write-ColoredMessage "═══════════════════════════════════════" "Green"
 Write-Host ""
 
-# Start Celery Worker in background
+# Start Celery Worker in background (with solo pool for Windows)
 Write-ColoredMessage "⚙️  Celery Worker starten..." "Yellow"
-$CeleryWorkerJob = Start-Job -ScriptBlock {
-    param($PythonPath)
-    Set-Location $using:PWD
-    & celery -A modbus_webserver worker -l info *>&1 | Out-File -FilePath "logs\celery-worker.log"
-} -ArgumentList $PythonCmd
+$workerProcess = Start-Process -FilePath "$PythonCmd" -ArgumentList "-m","celery","-A","modbus_webserver","worker","--pool=solo","-l","info" -WindowStyle Minimized -PassThru
 
 Start-Sleep -Seconds 3
-if ($CeleryWorkerJob.State -eq "Running") {
-    $script:CeleryWorkerPID = $CeleryWorkerJob.Id
-    Write-ColoredMessage "✓ Celery Worker gestart (Job ID: $($CeleryWorkerJob.Id))" "Green"
+if ($workerProcess -and !$workerProcess.HasExited) {
+    $script:CeleryWorkerPID = $workerProcess.Id
+    Write-ColoredMessage "✓ Celery Worker gestart (PID: $($workerProcess.Id))" "Green"
 } else {
     Write-ColoredMessage "⚠ Celery Worker niet gestart (optioneel)" "Yellow"
 }
 
-# Start Celery Beat in background
+# Start Celery Beat in background (with database scheduler)
 Write-ColoredMessage "⚙️  Celery Beat starten..." "Yellow"
-$CeleryBeatJob = Start-Job -ScriptBlock {
-    param($PythonPath)
-    Set-Location $using:PWD
-    & celery -A modbus_webserver beat -l info *>&1 | Out-File -FilePath "logs\celery-beat.log"
-} -ArgumentList $PythonCmd
+$beatProcess = Start-Process -FilePath "$PythonCmd" -ArgumentList "-m","celery","-A","modbus_webserver","beat","-l","info","--scheduler","django_celery_beat.schedulers:DatabaseScheduler" -WindowStyle Minimized -PassThru
 
 Start-Sleep -Seconds 3
-if ($CeleryBeatJob.State -eq "Running") {
-    $script:CeleryBeatPID = $CeleryBeatJob.Id
-    Write-ColoredMessage "✓ Celery Beat gestart (Job ID: $($CeleryBeatJob.Id))" "Green"
+if ($beatProcess -and !$beatProcess.HasExited) {
+    $script:CeleryBeatPID = $beatProcess.Id
+    Write-ColoredMessage "✓ Celery Beat gestart (PID: $($beatProcess.Id))" "Green"
 } else {
     Write-ColoredMessage "⚠ Celery Beat niet gestart (optioneel)" "Yellow"
 }
@@ -342,12 +360,12 @@ Write-ColoredMessage "Logs:" "Yellow"
 Write-Host "  Celery Worker: logs\celery-worker.log"
 Write-Host "  Celery Beat:   logs\celery-beat.log"
 Write-Host ""
-Write-ColoredMessage "Druk op Ctrl+C om te stoppen..." "Red"
+Write-ColoredMessage "Press Ctrl+C to stop..." "Red"
 Write-Host ""
 
 # Start Django in foreground
 try {
     & $PythonCmd manage.py runserver
 } finally {
-    Stop-Services -StopRedis "ask"
+    Stop-Services -StopRedis 'ask'
 }
