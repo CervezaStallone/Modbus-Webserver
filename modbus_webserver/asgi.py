@@ -14,6 +14,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "modbus_webserver.settings")
 django_asgi_app = get_asgi_application()
 
 from channels.auth import AuthMiddlewareStack
+
 # Import after Django setup
 from channels.routing import ProtocolTypeRouter, URLRouter
 
