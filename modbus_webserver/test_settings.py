@@ -3,12 +3,12 @@ Test settings for Modbus Webserver.
 Overrides production settings for testing.
 """
 
-from .settings import *
+from .settings import *  # noqa: F403, F401
 
 # Remove STATICFILES_STORAGE to use STORAGES instead
 try:
-    del STATICFILES_STORAGE
-except:
+    del STATICFILES_STORAGE  # noqa: F821
+except Exception:  # noqa: E722
     pass
 
 # Disable static files storage issues in tests
@@ -25,7 +25,7 @@ STORAGES = {
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.sqlite3",
-        "NAME": BASE_DIR / "test_db.sqlite3",
+        "NAME": BASE_DIR / "test_db.sqlite3",  # noqa: F405
     }
 }
 

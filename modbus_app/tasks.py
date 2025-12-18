@@ -3,13 +3,11 @@ Celery tasks for background processing.
 """
 
 import logging
-from datetime import timedelta
 
 from celery import shared_task
-from django.db import transaction
 from django.utils import timezone
 
-from modbus_app.models import Alarm, AlarmHistory, Device, ModbusInterface, Register, TrendData, TrendDataAggregated
+from modbus_app.models import Device, ModbusInterface, Register, TrendData
 from modbus_app.services.alarm_checker import AlarmChecker
 from modbus_app.services.connection_manager import get_connection_manager
 from modbus_app.services.data_aggregator import DataAggregator

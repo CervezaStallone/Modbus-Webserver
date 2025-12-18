@@ -188,7 +188,7 @@ class ModbusDriverBase(ABC):
         try:
             if not self.is_connected():
                 if not self.connect():
-                    logger.error(f"Failed to connect before writing registers")
+                    logger.error("Failed to connect before writing registers")
                     return False
 
             result = self.client.write_registers(address, values, slave=slave_id)
@@ -338,7 +338,8 @@ class ModbusTCPDriver(ModbusDriverBase):
 
             if connected:
                 logger.info(
-                    f"Connected to TCP interface {self.interface.name} at {self.interface.host}:{self.interface.tcp_port}"
+                    f"Connected to TCP interface {self.interface.name} at "
+                    f"{self.interface.host}:{self.interface.tcp_port}"
                 )
             else:
                 logger.error(f"Failed to connect to TCP interface {self.interface.name}")

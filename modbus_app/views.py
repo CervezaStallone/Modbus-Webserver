@@ -446,7 +446,10 @@ class RegisterViewSet(viewsets.ModelViewSet):
             return Response(
                 {
                     "status": "error",
-                    "message": "Kon waarde niet schrijven naar register. Controleer of het register schrijfbaar is en de waarde geldig is.",
+                    "message": (
+                        "Kon waarde niet schrijven naar register. "
+                        "Controleer of het register schrijfbaar is en de waarde geldig is."
+                    ),
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
