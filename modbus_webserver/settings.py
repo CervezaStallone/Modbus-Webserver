@@ -14,9 +14,7 @@ load_dotenv()
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv(
-    "DJANGO_SECRET_KEY", "django-insecure-change-this-in-production-!@#$%"
-)
+SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "django-insecure-change-this-in-production-!@#$%")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.getenv("DJANGO_DEBUG", "True") == "True"
@@ -106,15 +104,13 @@ def optimize_sqlite(sender, **kwargs):
     cursor.execute("PRAGMA mmap_size=30000000000;")
 
 
-from django.db.backends.signals import connection_created
+from django.db.backends.signals import connection_created  # noqa: E402
 
 connection_created.connect(optimize_sqlite)
 
 # Password validation
 AUTH_PASSWORD_VALIDATORS = [
-    {
-        "NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"
-    },
+    {"NAME": "django.contrib.auth.password_validation.UserAttributeSimilarityValidator"},
     {"NAME": "django.contrib.auth.password_validation.MinimumLengthValidator"},
     {"NAME": "django.contrib.auth.password_validation.CommonPasswordValidator"},
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
@@ -195,7 +191,7 @@ CELERY_TASK_TRACK_STARTED = True
 CELERY_TASK_TIME_LIMIT = 30 * 60  # 30 minutes
 
 # Windows-specific Celery settings (solo pool to avoid prefork issues)
-import sys
+import sys  # noqa: E402
 
 if sys.platform == "win32":
     CELERY_WORKER_POOL = "solo"
@@ -205,7 +201,7 @@ else:
     CELERY_WORKER_MAX_TASKS_PER_CHILD = 1000
 
 # Celery Beat Schedule
-from celery.schedules import crontab
+from celery.schedules import crontab  # noqa: E402
 
 CELERY_BEAT_SCHEDULE = {
     "poll-all-devices": {

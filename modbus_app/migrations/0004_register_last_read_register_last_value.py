@@ -13,9 +13,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="register",
             name="last_read",
-            field=models.DateTimeField(
-                blank=True, help_text="Last successful read", null=True
-            ),
+            field=models.DateTimeField(blank=True, help_text="Last successful read", null=True),
         ),
         migrations.AddField(
             model_name="register",

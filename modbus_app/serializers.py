@@ -2,21 +2,29 @@
 DRF Serializers voor alle Modbus models.
 """
 
-from django.utils import timezone
 from rest_framework import serializers
 
-from .models import (Alarm, AlarmHistory, AuditLog, CalculatedRegister,
-                     DashboardGroup, DashboardWidget, Device, DeviceTemplate,
-                     ModbusInterface, Register, TrendData, TrendDataAggregated)
+from .models import (
+    Alarm,
+    AlarmHistory,
+    AuditLog,
+    CalculatedRegister,
+    DashboardGroup,
+    DashboardWidget,
+    Device,
+    DeviceTemplate,
+    ModbusInterface,
+    Register,
+    TrendData,
+    TrendDataAggregated,
+)
 
 
 class ModbusInterfaceSerializer(serializers.ModelSerializer):
     """Serializer voor ModbusInterface met validatie."""
 
     status_display = serializers.CharField(source="get_status_display", read_only=True)
-    protocol_display = serializers.CharField(
-        source="get_protocol_display", read_only=True
-    )
+    protocol_display = serializers.CharField(source="get_protocol_display", read_only=True)
 
     class Meta:
         model = ModbusInterface
@@ -55,13 +63,9 @@ class ModbusInterfaceSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("Port is verplicht voor RTU protocol")
         elif protocol == "TCP":
             if not data.get("host"):
-                raise serializers.ValidationError(
-                    "TCP host is verplicht voor TCP protocol"
-                )
+                raise serializers.ValidationError("TCP host is verplicht voor TCP protocol")
             if not data.get("tcp_port"):
-                raise serializers.ValidationError(
-                    "TCP port is verplicht voor TCP protocol"
-                )
+                raise serializers.ValidationError("TCP port is verplicht voor TCP protocol")
 
         return data
 
@@ -190,9 +194,7 @@ class TrendDataAggregatedSerializer(serializers.ModelSerializer):
     """Serializer voor TrendDataAggregated."""
 
     register_name = serializers.CharField(source="register.name", read_only=True)
-    interval_display = serializers.CharField(
-        source="get_interval_display", read_only=True
-    )
+    interval_display = serializers.CharField(source="get_interval_display", read_only=True)
 
     class Meta:
         model = TrendDataAggregated
@@ -216,15 +218,11 @@ class DashboardWidgetSerializer(serializers.ModelSerializer):
 
     register_name = serializers.CharField(source="register.name", read_only=True)
     register_unit = serializers.CharField(source="register.unit", read_only=True)
-    widget_type_display = serializers.CharField(
-        source="get_widget_type_display", read_only=True
-    )
+    widget_type_display = serializers.CharField(source="get_widget_type_display", read_only=True)
     current_value = serializers.SerializerMethodField()
     config = serializers.SerializerMethodField()
     order = serializers.IntegerField(source="row_position", required=False)
-    group = serializers.PrimaryKeyRelatedField(
-        queryset=DashboardGroup.objects.all(), required=False, allow_null=True
-    )
+    group = serializers.PrimaryKeyRelatedField(queryset=DashboardGroup.objects.all(), required=False, allow_null=True)
 
     class Meta:
         model = DashboardWidget
@@ -273,22 +271,15 @@ class DashboardWidgetSerializer(serializers.ModelSerializer):
         try:
             if obj.register:
                 # First try to get from Register's last_value field if it exists
-                if (
-                    hasattr(obj.register, "last_value")
-                    and obj.register.last_value is not None
-                ):
+                if hasattr(obj.register, "last_value") and obj.register.last_value is not None:
                     return obj.register.last_value
                 # Otherwise try to get latest trend data
                 from .models import TrendData
 
-                latest = (
-                    TrendData.objects.filter(register=obj.register)
-                    .order_by("-timestamp")
-                    .first()
-                )
+                latest = TrendData.objects.filter(register=obj.register).order_by("-timestamp").first()
                 if latest:
                     return latest.value
-        except Exception as e:
+        except Exception:
             pass
         return None
 
@@ -332,9 +323,7 @@ class AlarmSerializer(serializers.ModelSerializer):
     """Serializer voor Alarm."""
 
     register_name = serializers.CharField(source="register.name", read_only=True)
-    severity_display = serializers.CharField(
-        source="get_severity_display", read_only=True
-    )
+    severity_display = serializers.CharField(source="get_severity_display", read_only=True)
     is_active_status = serializers.BooleanField(source="is_active", read_only=True)
 
     class Meta:
@@ -369,9 +358,7 @@ class AlarmHistorySerializer(serializers.ModelSerializer):
     """Serializer voor AlarmHistory."""
 
     alarm_name = serializers.CharField(source="alarm.name", read_only=True)
-    severity_display = serializers.CharField(
-        source="alarm.get_severity_display", read_only=True
-    )
+    severity_display = serializers.CharField(source="alarm.get_severity_display", read_only=True)
 
     class Meta:
         model = AlarmHistory
@@ -462,12 +449,8 @@ class AuditLogSerializer(serializers.ModelSerializer):
 class ModbusInterfaceListSerializer(serializers.ModelSerializer):
     """Vereenvoudigde serializer voor interface lijst."""
 
-    status_display = serializers.CharField(
-        source="get_connection_status_display", read_only=True
-    )
-    protocol_display = serializers.CharField(
-        source="get_protocol_display", read_only=True
-    )
+    status_display = serializers.CharField(source="get_connection_status_display", read_only=True)
+    protocol_display = serializers.CharField(source="get_protocol_display", read_only=True)
     device_count = serializers.SerializerMethodField()
 
     class Meta:
@@ -499,9 +482,7 @@ class DeviceListSerializer(serializers.ModelSerializer):
     """Vereenvoudigde serializer voor device lijst."""
 
     interface_name = serializers.CharField(source="interface.name", read_only=True)
-    status_display = serializers.CharField(
-        source="get_connection_status_display", read_only=True
-    )
+    status_display = serializers.CharField(source="get_connection_status_display", read_only=True)
     register_count = serializers.SerializerMethodField()
 
     class Meta:

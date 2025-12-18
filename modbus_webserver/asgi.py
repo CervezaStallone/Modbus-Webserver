@@ -13,11 +13,12 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "modbus_webserver.settings")
 # Initialize Django ASGI application early to populate AppRegistry
 django_asgi_app = get_asgi_application()
 
-from channels.auth import AuthMiddlewareStack
-# Import after Django setup
-from channels.routing import ProtocolTypeRouter, URLRouter
+from channels.auth import AuthMiddlewareStack  # noqa: E402
 
-from modbus_app import routing
+# Import after Django setup
+from channels.routing import ProtocolTypeRouter, URLRouter  # noqa: E402
+
+from modbus_app import routing  # noqa: E402
 
 application = ProtocolTypeRouter(
     {

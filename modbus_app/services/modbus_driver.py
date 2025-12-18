@@ -7,7 +7,6 @@ import struct
 from abc import ABC, abstractmethod
 
 from pymodbus.client import ModbusSerialClient, ModbusTcpClient
-from pymodbus.exceptions import ModbusException
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +44,7 @@ class ModbusDriverBase(ABC):
         try:
             if not self.is_connected():
                 if not self.connect():
-                    logger.error(f"Failed to connect before reading coils")
+                    logger.error("Failed to connect before reading coils")
                     return None
 
             result = self.client.read_coils(address, count, slave=slave_id)
@@ -66,15 +65,13 @@ class ModbusDriverBase(ABC):
         try:
             if not self.is_connected():
                 if not self.connect():
-                    logger.error(f"Failed to connect before reading discrete inputs")
+                    logger.error("Failed to connect before reading discrete inputs")
                     return None
 
             result = self.client.read_discrete_inputs(address, count, slave=slave_id)
 
             if result.isError():
-                logger.error(
-                    f"Error reading discrete inputs from slave {slave_id} at {address}"
-                )
+                logger.error(f"Error reading discrete inputs from slave {slave_id} at {address}")
                 self._connected = False
                 return None
 
@@ -89,15 +86,13 @@ class ModbusDriverBase(ABC):
         try:
             if not self.is_connected():
                 if not self.connect():
-                    logger.error(f"Failed to connect before reading holding registers")
+                    logger.error("Failed to connect before reading holding registers")
                     return None
 
             result = self.client.read_holding_registers(address, count, slave=slave_id)
 
             if result.isError():
-                logger.error(
-                    f"Error reading holding registers from slave {slave_id} at {address}"
-                )
+                logger.error(f"Error reading holding registers from slave {slave_id} at {address}")
                 self._connected = False
                 return None
 
@@ -112,15 +107,13 @@ class ModbusDriverBase(ABC):
         try:
             if not self.is_connected():
                 if not self.connect():
-                    logger.error(f"Failed to connect before reading input registers")
+                    logger.error("Failed to connect before reading input registers")
                     return None
 
             result = self.client.read_input_registers(address, count, slave=slave_id)
 
             if result.isError():
-                logger.error(
-                    f"Error reading input registers from slave {slave_id} at {address}"
-                )
+                logger.error(f"Error reading input registers from slave {slave_id} at {address}")
                 self._connected = False
                 return None
 
@@ -135,7 +128,7 @@ class ModbusDriverBase(ABC):
         try:
             if not self.is_connected():
                 if not self.connect():
-                    logger.error(f"Failed to connect before writing coil")
+                    logger.error("Failed to connect before writing coil")
                     return False
 
             result = self.client.write_coil(address, value, slave=slave_id)
@@ -173,7 +166,7 @@ class ModbusDriverBase(ABC):
         try:
             if not self.is_connected():
                 if not self.connect():
-                    logger.error(f"Failed to connect before writing coils")
+                    logger.error("Failed to connect before writing coils")
                     return False
 
             result = self.client.write_coils(address, values, slave=slave_id)
@@ -194,15 +187,13 @@ class ModbusDriverBase(ABC):
         try:
             if not self.is_connected():
                 if not self.connect():
-                    logger.error(f"Failed to connect before writing registers")
+                    logger.error("Failed to connect before writing registers")
                     return False
 
             result = self.client.write_registers(address, values, slave=slave_id)
 
             if result.isError():
-                logger.error(
-                    f"Error writing registers to slave {slave_id} at {address}"
-                )
+                logger.error(f"Error writing registers to slave {slave_id} at {address}")
                 self._connected = False
                 return False
 
@@ -212,9 +203,7 @@ class ModbusDriverBase(ABC):
             self._connected = False
             return False
 
-    def convert_registers_to_value(
-        self, registers, data_type, byte_order="big", word_order="high_low"
-    ):
+    def convert_registers_to_value(self, registers, data_type, byte_order="big", word_order="high_low"):
         """
         Convert register values to actual data type.
 
@@ -309,13 +298,9 @@ class ModbusRTUDriver(ModbusDriverBase):
             self._connected = connected
 
             if connected:
-                logger.info(
-                    f"Connected to RTU interface {self.interface.name} on {self.interface.port}"
-                )
+                logger.info(f"Connected to RTU interface {self.interface.name} on {self.interface.port}")
             else:
-                logger.error(
-                    f"Failed to connect to RTU interface {self.interface.name}"
-                )
+                logger.error(f"Failed to connect to RTU interface {self.interface.name}")
 
             return connected
 
@@ -352,12 +337,11 @@ class ModbusTCPDriver(ModbusDriverBase):
 
             if connected:
                 logger.info(
-                    f"Connected to TCP interface {self.interface.name} at {self.interface.host}:{self.interface.tcp_port}"
+                    f"Connected to TCP interface {self.interface.name} at "
+                    f"{self.interface.host}:{self.interface.tcp_port}"
                 )
             else:
-                logger.error(
-                    f"Failed to connect to TCP interface {self.interface.name}"
-                )
+                logger.error(f"Failed to connect to TCP interface {self.interface.name}")
 
             return connected
 

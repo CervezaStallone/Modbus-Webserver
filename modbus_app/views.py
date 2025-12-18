@@ -13,18 +13,37 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAdminUser, IsAuthenticated
 from rest_framework.response import Response
 
-from .models import (Alarm, AlarmHistory, AuditLog, CalculatedRegister,
-                     DashboardGroup, DashboardWidget, Device, DeviceTemplate,
-                     ModbusInterface, Register, TrendData, TrendDataAggregated)
-from .serializers import (AlarmHistorySerializer, AlarmSerializer,
-                          AuditLogSerializer, CalculatedRegisterSerializer,
-                          DashboardGroupSerializer, DashboardWidgetSerializer,
-                          DeviceListSerializer, DeviceSerializer,
-                          DeviceTemplateSerializer,
-                          ModbusInterfaceListSerializer,
-                          ModbusInterfaceSerializer, RegisterListSerializer,
-                          RegisterSerializer, TrendDataAggregatedSerializer,
-                          TrendDataSerializer)
+from .models import (
+    Alarm,
+    AlarmHistory,
+    AuditLog,
+    CalculatedRegister,
+    DashboardGroup,
+    DashboardWidget,
+    Device,
+    DeviceTemplate,
+    ModbusInterface,
+    Register,
+    TrendData,
+    TrendDataAggregated,
+)
+from .serializers import (
+    AlarmHistorySerializer,
+    AlarmSerializer,
+    AuditLogSerializer,
+    CalculatedRegisterSerializer,
+    DashboardGroupSerializer,
+    DashboardWidgetSerializer,
+    DeviceListSerializer,
+    DeviceSerializer,
+    DeviceTemplateSerializer,
+    ModbusInterfaceListSerializer,
+    ModbusInterfaceSerializer,
+    RegisterListSerializer,
+    RegisterSerializer,
+    TrendDataAggregatedSerializer,
+    TrendDataSerializer,
+)
 from .services.register_service import RegisterService
 
 
@@ -116,9 +135,7 @@ def register_edit_view(request, pk):
 @login_required
 def dashboard_layout_view(request):
     """Dashboard layout configuration view."""
-    return render(
-        request, "config/dashboard_layout.html", {"title": "Dashboard Layout"}
-    )
+    return render(request, "config/dashboard_layout.html", {"title": "Dashboard Layout"})
 
 
 @login_required
@@ -300,9 +317,7 @@ class DeviceViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
         except Exception as e:
-            logging.getLogger(__name__).error(
-                f"Failed to create registers from template: {str(e)}", exc_info=True
-            )
+            logging.getLogger(__name__).error(f"Failed to create registers from template: {str(e)}", exc_info=True)
             return Response(
                 {
                     "status": "error",
@@ -359,9 +374,7 @@ class RegisterViewSet(viewsets.ModelViewSet):
             # Also save to TrendData for history
             from .models import TrendData
 
-            TrendData.objects.create(
-                register=register, value=converted_value, timestamp=now
-            )
+            TrendData.objects.create(register=register, value=converted_value, timestamp=now)
 
             # Broadcast update via WebSocket
             from .utils.websocket_broadcast import broadcast_register_update
@@ -383,9 +396,7 @@ class RegisterViewSet(viewsets.ModelViewSet):
                 }
             )
         except Exception as e:
-            logging.getLogger(__name__).error(
-                f"Failed to read register {register.name}: {str(e)}", exc_info=True
-            )
+            logging.getLogger(__name__).error(f"Failed to read register {register.name}: {str(e)}", exc_info=True)
             return Response(
                 {
                     "status": "error",
@@ -435,7 +446,10 @@ class RegisterViewSet(viewsets.ModelViewSet):
             return Response(
                 {
                     "status": "error",
-                    "message": "Kon waarde niet schrijven naar register. Controleer of het register schrijfbaar is en de waarde geldig is.",
+                    "message": (
+                        "Kon waarde niet schrijven naar register. "
+                        "Controleer of het register schrijfbaar is en de waarde geldig is."
+                    ),
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
@@ -459,9 +473,7 @@ class RegisterViewSet(viewsets.ModelViewSet):
             serializer = TrendDataAggregatedSerializer(data, many=True)
         else:
             # Gebruik raw data
-            data = TrendData.objects.filter(
-                register=register, timestamp__gte=start_time
-            ).order_by("timestamp")
+            data = TrendData.objects.filter(register=register, timestamp__gte=start_time).order_by("timestamp")
             serializer = TrendDataSerializer(data, many=True)
 
         return Response(serializer.data)
@@ -561,9 +573,9 @@ class AlarmViewSet(viewsets.ModelViewSet):
     def active(self, request):
         """Haal alle actieve alarms op."""
         active_alarms = self.get_queryset().filter(enabled=True)
-        active_history = AlarmHistory.objects.filter(
-            alarm__in=active_alarms, cleared_at__isnull=True
-        ).select_related("alarm", "alarm__register")
+        active_history = AlarmHistory.objects.filter(alarm__in=active_alarms, cleared_at__isnull=True).select_related(
+            "alarm", "alarm__register"
+        )
 
         serializer = AlarmHistorySerializer(active_history, many=True)
         return Response(serializer.data)
@@ -575,9 +587,7 @@ class AlarmViewSet(viewsets.ModelViewSet):
 
         # Vind meest recente actieve alarm history entry
         history_entry = (
-            AlarmHistory.objects.filter(alarm=alarm, cleared_at__isnull=True)
-            .order_by("-triggered_at")
-            .first()
+            AlarmHistory.objects.filter(alarm=alarm, cleared_at__isnull=True).order_by("-triggered_at").first()
         )
 
         if not history_entry:
@@ -588,14 +598,10 @@ class AlarmViewSet(viewsets.ModelViewSet):
 
         history_entry.acknowledged = True
         history_entry.acknowledged_at = timezone.now()
-        history_entry.acknowledged_by = (
-            request.user.username if request.user.is_authenticated else "anonymous"
-        )
+        history_entry.acknowledged_by = request.user.username if request.user.is_authenticated else "anonymous"
         history_entry.save()
 
-        return Response(
-            {"status": "success", "message": f"Alarm {alarm.name} bevestigd"}
-        )
+        return Response({"status": "success", "message": f"Alarm {alarm.name} bevestigd"})
 
 
 class AlarmHistoryViewSet(viewsets.ReadOnlyModelViewSet):

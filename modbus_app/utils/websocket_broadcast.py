@@ -26,11 +26,7 @@ def broadcast_register_update(register_id, value, timestamp, unit=""):
             "type": "register_update",
             "register_id": register_id,
             "value": value,
-            "timestamp": (
-                timestamp.isoformat()
-                if hasattr(timestamp, "isoformat")
-                else str(timestamp)
-            ),
+            "timestamp": (timestamp.isoformat() if hasattr(timestamp, "isoformat") else str(timestamp)),
             "unit": unit,
         }
 
@@ -45,9 +41,7 @@ def broadcast_register_update(register_id, value, timestamp, unit=""):
         import logging
 
         logger = logging.getLogger(__name__)
-        logger.error(
-            f"Error broadcasting register update for register {register_id}: {e}"
-        )
+        logger.error(f"Error broadcasting register update for register {register_id}: {e}")
 
 
 def broadcast_device_update(device_id, status, error_message=""):
@@ -177,6 +171,4 @@ def broadcast_connection_status(interface_id, status):
         import logging
 
         logger = logging.getLogger(__name__)
-        logger.error(
-            f"Error broadcasting connection status for interface {interface_id}: {e}"
-        )
+        logger.error(f"Error broadcasting connection status for interface {interface_id}: {e}")

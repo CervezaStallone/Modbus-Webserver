@@ -33,15 +33,11 @@ class ModbusInterface(models.Model):
     name = models.CharField(max_length=100, unique=True)
     protocol = models.CharField(max_length=3, choices=PROTOCOL_CHOICES)
     enabled = models.BooleanField(default=True)
-    connection_status = models.CharField(
-        max_length=10, choices=STATUS_CHOICES, default="offline"
-    )
+    connection_status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="offline")
     last_seen = models.DateTimeField(null=True, blank=True)
 
     # RTU specific fields
-    port = models.CharField(
-        max_length=50, blank=True, help_text="Serial port (e.g., COM3, /dev/ttyUSB0)"
-    )
+    port = models.CharField(max_length=50, blank=True, help_text="Serial port (e.g., COM3, /dev/ttyUSB0)")
     baudrate = models.IntegerField(
         null=True,
         blank=True,
@@ -54,20 +50,12 @@ class ModbusInterface(models.Model):
         ],
         default=9600,
     )
-    parity = models.CharField(
-        max_length=1, choices=PARITY_CHOICES, default="N", blank=True
-    )
-    stopbits = models.IntegerField(
-        null=True, blank=True, choices=[(1, "1"), (2, "2")], default=1
-    )
-    bytesize = models.IntegerField(
-        null=True, blank=True, choices=[(7, "7"), (8, "8")], default=8
-    )
+    parity = models.CharField(max_length=1, choices=PARITY_CHOICES, default="N", blank=True)
+    stopbits = models.IntegerField(null=True, blank=True, choices=[(1, "1"), (2, "2")], default=1)
+    bytesize = models.IntegerField(null=True, blank=True, choices=[(7, "7"), (8, "8")], default=8)
 
     # TCP specific fields
-    host = models.CharField(
-        max_length=100, blank=True, help_text="IP address or hostname"
-    )
+    host = models.CharField(max_length=100, blank=True, help_text="IP address or hostname")
     tcp_port = models.IntegerField(
         null=True,
         blank=True,
@@ -122,21 +110,15 @@ class Device(models.Model):
     ]
 
     name = models.CharField(max_length=100)
-    interface = models.ForeignKey(
-        ModbusInterface, on_delete=models.CASCADE, related_name="devices"
-    )
-    slave_id = models.IntegerField(
-        validators=[MinValueValidator(1), MaxValueValidator(247)]
-    )
+    interface = models.ForeignKey(ModbusInterface, on_delete=models.CASCADE, related_name="devices")
+    slave_id = models.IntegerField(validators=[MinValueValidator(1), MaxValueValidator(247)])
     enabled = models.BooleanField(default=True)
     polling_interval = models.IntegerField(
         default=5,
         validators=[MinValueValidator(1)],
         help_text="Polling interval in seconds",
     )
-    connection_status = models.CharField(
-        max_length=10, choices=STATUS_CHOICES, default="offline"
-    )
+    connection_status = models.CharField(max_length=10, choices=STATUS_CHOICES, default="offline")
     last_poll = models.DateTimeField(null=True, blank=True)
     error_count = models.IntegerField(default=0)
     description = models.TextField(blank=True)
@@ -205,26 +187,14 @@ class Register(models.Model):
         ("low_high", "Low Word First"),
     ]
 
-    device = models.ForeignKey(
-        Device, on_delete=models.CASCADE, related_name="registers"
-    )
+    device = models.ForeignKey(Device, on_delete=models.CASCADE, related_name="registers")
     name = models.CharField(max_length=100)
     function_code = models.IntegerField(choices=FUNCTION_CODE_CHOICES)
-    address = models.IntegerField(
-        validators=[MinValueValidator(0), MaxValueValidator(65535)]
-    )
-    data_type = models.CharField(
-        max_length=10, choices=DATA_TYPE_CHOICES, default="UINT16"
-    )
-    byte_order = models.CharField(
-        max_length=10, choices=BYTE_ORDER_CHOICES, default="big"
-    )
-    word_order = models.CharField(
-        max_length=10, choices=WORD_ORDER_CHOICES, default="high_low"
-    )
-    count = models.IntegerField(
-        default=1, validators=[MinValueValidator(1), MaxValueValidator(4)]
-    )
+    address = models.IntegerField(validators=[MinValueValidator(0), MaxValueValidator(65535)])
+    data_type = models.CharField(max_length=10, choices=DATA_TYPE_CHOICES, default="UINT16")
+    byte_order = models.CharField(max_length=10, choices=BYTE_ORDER_CHOICES, default="big")
+    word_order = models.CharField(max_length=10, choices=WORD_ORDER_CHOICES, default="high_low")
+    count = models.IntegerField(default=1, validators=[MinValueValidator(1), MaxValueValidator(4)])
 
     # Conversion settings
     conversion_factor = models.DecimalField(
@@ -249,9 +219,7 @@ class Register(models.Model):
     enabled = models.BooleanField(default=True)
     writable = models.BooleanField(default=False)
     last_value = models.FloatField(null=True, blank=True, help_text="Last read value")
-    last_read = models.DateTimeField(
-        null=True, blank=True, help_text="Last successful read"
-    )
+    last_read = models.DateTimeField(null=True, blank=True, help_text="Last successful read")
 
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)
@@ -270,9 +238,7 @@ class Register(models.Model):
 
     def convert_value(self, raw_value):
         """Apply conversion formula to raw value."""
-        return float(raw_value) * float(self.conversion_factor) + float(
-            self.conversion_offset
-        )
+        return float(raw_value) * float(self.conversion_factor) + float(self.conversion_offset)
 
     @property
     def is_writable(self):
@@ -291,9 +257,7 @@ class TrendData(models.Model):
         ("uncertain", "Uncertain"),
     ]
 
-    register = models.ForeignKey(
-        Register, on_delete=models.CASCADE, related_name="trend_data"
-    )
+    register = models.ForeignKey(Register, on_delete=models.CASCADE, related_name="trend_data")
     timestamp = models.DateTimeField(default=timezone.now, db_index=True)
     raw_value = models.FloatField()
     converted_value = models.FloatField()
@@ -328,9 +292,7 @@ class TrendDataAggregated(models.Model):
         ("weekly", "Weekly"),
     ]
 
-    register = models.ForeignKey(
-        Register, on_delete=models.CASCADE, related_name="aggregated_data"
-    )
+    register = models.ForeignKey(Register, on_delete=models.CASCADE, related_name="aggregated_data")
     timestamp = models.DateTimeField(db_index=True)
     interval = models.CharField(max_length=10, choices=INTERVAL_CHOICES)
     min_value = models.FloatField()
@@ -396,17 +358,11 @@ class DashboardWidget(models.Model):
         ("static", "Static Range"),
     ]
 
-    group = models.ForeignKey(
-        DashboardGroup, on_delete=models.CASCADE, related_name="widgets"
-    )
-    register = models.ForeignKey(
-        Register, on_delete=models.CASCADE, related_name="widgets"
-    )
+    group = models.ForeignKey(DashboardGroup, on_delete=models.CASCADE, related_name="widgets")
+    register = models.ForeignKey(Register, on_delete=models.CASCADE, related_name="widgets")
 
     # Widget settings
-    widget_type = models.CharField(
-        max_length=20, choices=WIDGET_TYPE_CHOICES, default="line_chart"
-    )
+    widget_type = models.CharField(max_length=20, choices=WIDGET_TYPE_CHOICES, default="line_chart")
     title = models.CharField(max_length=100)
     column_position = models.IntegerField(
         default=0,
@@ -428,32 +384,22 @@ class DashboardWidget(models.Model):
         validators=[MinValueValidator(1)],
         help_text="Sample interval in seconds",
     )
-    aggregation_method = models.CharField(
-        max_length=10, choices=AGGREGATION_CHOICES, default="none"
-    )
+    aggregation_method = models.CharField(max_length=10, choices=AGGREGATION_CHOICES, default="none")
     time_range = models.IntegerField(
         default=60,
         validators=[MinValueValidator(1)],
         help_text="Time window in minutes",
     )
-    chart_color = models.CharField(
-        max_length=7, default="#007bff", help_text="Hex color code"
-    )
+    chart_color = models.CharField(max_length=7, default="#007bff", help_text="Hex color code")
     show_legend = models.BooleanField(default=True)
-    y_axis_mode = models.CharField(
-        max_length=10, choices=Y_AXIS_MODE_CHOICES, default="auto"
-    )
+    y_axis_mode = models.CharField(max_length=10, choices=Y_AXIS_MODE_CHOICES, default="auto")
     y_axis_min = models.FloatField(null=True, blank=True)
     y_axis_max = models.FloatField(null=True, blank=True)
 
     # Text display configuration
-    decimal_places = models.IntegerField(
-        default=2, validators=[MinValueValidator(0), MaxValueValidator(6)]
-    )
+    decimal_places = models.IntegerField(default=2, validators=[MinValueValidator(0), MaxValueValidator(6)])
     show_unit = models.BooleanField(default=True)
-    font_size = models.IntegerField(
-        default=24, validators=[MinValueValidator(8), MaxValueValidator(72)]
-    )
+    font_size = models.IntegerField(default=24, validators=[MinValueValidator(8), MaxValueValidator(72)])
 
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)
@@ -488,20 +434,14 @@ class Alarm(models.Model):
         ("critical", "Critical"),
     ]
 
-    register = models.ForeignKey(
-        Register, on_delete=models.CASCADE, related_name="alarms"
-    )
+    register = models.ForeignKey(Register, on_delete=models.CASCADE, related_name="alarms")
     name = models.CharField(max_length=100)
     enabled = models.BooleanField(default=True)
     condition = models.CharField(max_length=20, choices=CONDITION_CHOICES)
     threshold_high = models.FloatField()
     threshold_low = models.FloatField(null=True, blank=True)
-    hysteresis = models.FloatField(
-        default=0.0, help_text="Hysteresis to prevent alarm flapping"
-    )
-    severity = models.CharField(
-        max_length=10, choices=SEVERITY_CHOICES, default="warning"
-    )
+    hysteresis = models.FloatField(default=0.0, help_text="Hysteresis to prevent alarm flapping")
+    severity = models.CharField(max_length=10, choices=SEVERITY_CHOICES, default="warning")
     message = models.TextField(help_text="Alarm message/description")
     last_triggered = models.DateTimeField(null=True, blank=True)
 
@@ -574,9 +514,7 @@ class DeviceTemplate(models.Model):
     model = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     default_polling_interval = models.IntegerField(default=5)
-    register_definitions = models.JSONField(
-        help_text="JSON array with register configurations", default=list
-    )
+    register_definitions = models.JSONField(help_text="JSON array with register configurations", default=list)
 
     # Metadata
     created_at = models.DateTimeField(auto_now_add=True)
@@ -594,18 +532,12 @@ class CalculatedRegister(models.Model):
     Virtual registers calculated from other registers.
     """
 
-    device = models.ForeignKey(
-        Device, on_delete=models.CASCADE, related_name="calculated_registers"
-    )
+    device = models.ForeignKey(Device, on_delete=models.CASCADE, related_name="calculated_registers")
     name = models.CharField(max_length=100)
-    formula = models.TextField(
-        help_text="Python expression (e.g., 'register_1 + register_2 * 1.5')"
-    )
+    formula = models.TextField(help_text="Python expression (e.g., 'register_1 + register_2 * 1.5')")
     source_registers = models.ManyToManyField(Register, related_name="calculated_by")
     unit = models.CharField(max_length=20, blank=True)
-    update_interval = models.IntegerField(
-        default=5, help_text="Recalculate every X seconds"
-    )
+    update_interval = models.IntegerField(default=5, help_text="Recalculate every X seconds")
     last_value = models.FloatField(null=True, blank=True)
     last_calculated = models.DateTimeField(null=True, blank=True)
 

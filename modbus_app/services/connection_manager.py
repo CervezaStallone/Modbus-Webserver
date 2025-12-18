@@ -4,8 +4,8 @@ Beheert connection pooling, health checks en automatic recovery.
 """
 
 import logging
-from datetime import datetime, timedelta
-from typing import Dict, Optional
+from datetime import datetime
+from typing import Dict
 
 from django.utils import timezone
 
@@ -50,9 +50,7 @@ class ConnectionManager:
                 return driver
             else:
                 # Connectie werkt niet meer, verwijder
-                logger.warning(
-                    f"Connection voor {interface.name} werkt niet meer, reconnecting..."
-                )
+                logger.warning(f"Connection voor {interface.name} werkt niet meer, reconnecting...")
                 self._close_connection(interface.id)
 
         # Maak nieuwe connectie
@@ -139,9 +137,7 @@ class ConnectionManager:
 
             # Probeer een simpele test read (address 0, 1 register)
             # Dit is low-impact maar test wel de connectie
-            result = driver.read_holding_registers(
-                slave_id=1, address=0, count=1  # Test met slave 1
-            )
+            driver.read_holding_registers(slave_id=1, address=0, count=1)  # Test met slave 1
 
             # Als we hier komen zonder exception is de interface bereikbaar
             interface.update_status("online")

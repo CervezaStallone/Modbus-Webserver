@@ -36,34 +36,22 @@ class RegisterService:
             interface = device.interface
 
             if not interface.enabled or not device.enabled or not register.enabled:
-                logger.debug(
-                    f"Register {register.name} or its device/interface is disabled"
-                )
+                logger.debug(f"Register {register.name} or its device/interface is disabled")
                 return None, None
 
             driver = self.get_driver(interface)
 
             # Determine which read function to use based on function code
             if register.function_code == 1:
-                raw_data = driver.read_coils(
-                    device.slave_id, register.address, register.count
-                )
+                raw_data = driver.read_coils(device.slave_id, register.address, register.count)
             elif register.function_code == 2:
-                raw_data = driver.read_discrete_inputs(
-                    device.slave_id, register.address, register.count
-                )
+                raw_data = driver.read_discrete_inputs(device.slave_id, register.address, register.count)
             elif register.function_code == 3:
-                raw_data = driver.read_holding_registers(
-                    device.slave_id, register.address, register.count
-                )
+                raw_data = driver.read_holding_registers(device.slave_id, register.address, register.count)
             elif register.function_code == 4:
-                raw_data = driver.read_input_registers(
-                    device.slave_id, register.address, register.count
-                )
+                raw_data = driver.read_input_registers(device.slave_id, register.address, register.count)
             else:
-                logger.error(
-                    f"Unsupported read function code: {register.function_code}"
-                )
+                logger.error(f"Unsupported read function code: {register.function_code}")
                 return None, None
 
             if raw_data is None:
@@ -127,9 +115,7 @@ class RegisterService:
             interface = device.interface
 
             if not interface.enabled or not device.enabled or not register.enabled:
-                logger.error(
-                    f"Register {register.name} or its device/interface is disabled"
-                )
+                logger.error(f"Register {register.name} or its device/interface is disabled")
                 return False
 
             if not register.is_writable:
@@ -148,9 +134,7 @@ class RegisterService:
 
             elif register.function_code == 6:
                 # Write single register
-                return driver.write_register(
-                    device.slave_id, register.address, int(value)
-                )
+                return driver.write_register(device.slave_id, register.address, int(value))
 
             elif register.function_code == 15:
                 # Write multiple coils
@@ -163,9 +147,7 @@ class RegisterService:
                 return driver.write_registers(device.slave_id, register.address, values)
 
             else:
-                logger.error(
-                    f"Unsupported write function code: {register.function_code}"
-                )
+                logger.error(f"Unsupported write function code: {register.function_code}")
                 return False
 
         except Exception as e:
@@ -190,11 +172,7 @@ class RegisterService:
         registers_by_device = defaultdict(list)
 
         for register in register_list:
-            if (
-                register.enabled
-                and register.device.enabled
-                and register.device.interface.enabled
-            ):
+            if register.enabled and register.device.enabled and register.device.interface.enabled:
                 registers_by_device[register.device.id].append(register)
 
         # Read all registers for each device

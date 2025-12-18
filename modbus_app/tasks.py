@@ -3,22 +3,21 @@ Celery tasks for background processing.
 """
 
 import logging
-from datetime import timedelta
 
 from celery import shared_task
-from django.db import transaction
 from django.utils import timezone
 
-from modbus_app.models import (Alarm, AlarmHistory, Device, ModbusInterface,
-                               Register, TrendData, TrendDataAggregated)
+from modbus_app.models import Device, ModbusInterface, Register, TrendData
 from modbus_app.services.alarm_checker import AlarmChecker
 from modbus_app.services.connection_manager import get_connection_manager
 from modbus_app.services.data_aggregator import DataAggregator
 from modbus_app.services.register_service import get_register_service
-from modbus_app.utils.websocket_broadcast import (broadcast_alarm,
-                                                  broadcast_connection_status,
-                                                  broadcast_device_update,
-                                                  broadcast_register_update)
+from modbus_app.utils.websocket_broadcast import (
+    broadcast_alarm,
+    broadcast_connection_status,
+    broadcast_device_update,
+    broadcast_register_update,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -32,9 +31,7 @@ def poll_device_registers(self, device_id):
         device_id: ID of the device to poll
     """
     try:
-        device = Device.objects.select_related("interface").get(
-            id=device_id, enabled=True
-        )
+        device = Device.objects.select_related("interface").get(id=device_id, enabled=True)
 
         if not device.interface.enabled:
             return
@@ -76,9 +73,7 @@ def poll_device_registers(self, device_id):
                 trend_data_list.append(trend_data)
 
                 # Broadcast update
-                broadcast_register_update(
-                    register_id, converted_value, now, register.unit
-                )
+                broadcast_register_update(register_id, converted_value, now, register.unit)
 
             except Exception as e:
                 logger.error(f"Error processing register {register_id}: {e}")
@@ -86,9 +81,7 @@ def poll_device_registers(self, device_id):
         # Bulk create trend data
         if trend_data_list:
             TrendData.objects.bulk_create(trend_data_list)
-            logger.debug(
-                f"Stored {len(trend_data_list)} trend data entries for device {device.name}"
-            )
+            logger.debug(f"Stored {len(trend_data_list)} trend data entries for device {device.name}")
 
     except Device.DoesNotExist:
         logger.error(f"Device {device_id} not found or not enabled")
@@ -105,9 +98,7 @@ def poll_all_devices():
     """Poll all enabled devices based on their polling intervals."""
     now = timezone.now()
 
-    devices = Device.objects.filter(
-        enabled=True, interface__enabled=True
-    ).select_related("interface")
+    devices = Device.objects.filter(enabled=True, interface__enabled=True).select_related("interface")
 
     for device in devices:
         # Check if device should be polled based on interval
@@ -172,9 +163,7 @@ def update_calculated_registers():
 
     from modbus_app.models import CalculatedRegister
 
-    calculated_registers = CalculatedRegister.objects.all().prefetch_related(
-        "source_registers"
-    )
+    calculated_registers = CalculatedRegister.objects.all().prefetch_related("source_registers")
 
     # Create safe evaluator with whitelisted functions only
     aeval = Interpreter()
@@ -190,9 +179,7 @@ def update_calculated_registers():
             # Get latest values for source registers
             for i, source_reg in enumerate(calc_reg.source_registers.all()):
                 latest_data = (
-                    TrendData.objects.filter(register=source_reg, quality="good")
-                    .order_by("-timestamp")
-                    .first()
+                    TrendData.objects.filter(register=source_reg, quality="good").order_by("-timestamp").first()
                 )
 
                 if latest_data:
@@ -205,9 +192,7 @@ def update_calculated_registers():
                 result = aeval(calc_reg.formula, show_errors=False, raise_errors=False)
 
                 if aeval.error:
-                    logger.error(
-                        f"Formula error for {calc_reg.name}: {aeval.error[0].get_error()}"
-                    )
+                    logger.error(f"Formula error for {calc_reg.name}: {aeval.error[0].get_error()}")
                     continue
 
                 calc_reg.last_value = float(result)
@@ -217,9 +202,7 @@ def update_calculated_registers():
                 logger.debug(f"Updated calculated register {calc_reg.name}: {result}")
 
             except (ValueError, TypeError) as e:
-                logger.error(
-                    f"Error converting formula result for {calc_reg.name}: {e}"
-                )
+                logger.error(f"Error converting formula result for {calc_reg.name}: {e}")
 
         except Exception as e:
             logger.error(f"Error updating calculated register {calc_reg.name}: {e}")
@@ -254,7 +237,5 @@ def health_check_interfaces():
 def cleanup_old_data():
     """Clean up old trend data based on retention policy."""
     aggregator = DataAggregator()
-    results = aggregator.cleanup_old_data(
-        raw_data_days=7, hourly_data_days=90, daily_data_days=730
-    )
+    results = aggregator.cleanup_old_data(raw_data_days=7, hourly_data_days=90, daily_data_days=730)
     logger.info(f"Data cleanup complete: {results}")
