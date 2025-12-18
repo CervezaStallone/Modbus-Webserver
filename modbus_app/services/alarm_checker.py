@@ -31,11 +31,7 @@ class AlarmChecker:
             return False
 
         # Haal laatste waarde op van het register
-        latest_data = (
-            TrendData.objects.filter(register=alarm.register, quality="good")
-            .order_by("-timestamp")
-            .first()
-        )
+        latest_data = TrendData.objects.filter(register=alarm.register, quality="good").order_by("-timestamp").first()
 
         if not latest_data:
             logger.debug(f"Geen data beschikbaar voor alarm {alarm.name}")
@@ -102,9 +98,7 @@ class AlarmChecker:
             if threshold_low is None:
                 logger.error(f"range conditie vereist threshold_low")
                 return False
-            return not (
-                threshold_low - hysteresis <= value <= threshold_high + hysteresis
-            )
+            return not (threshold_low - hysteresis <= value <= threshold_high + hysteresis)
 
         else:
             logger.error(f"Onbekende conditie: {condition}")
@@ -149,19 +143,14 @@ class AlarmChecker:
         """
         # Vind actieve alarm history entry
         active_history = (
-            AlarmHistory.objects.filter(alarm=alarm, cleared_at__isnull=True)
-            .order_by("-triggered_at")
-            .first()
+            AlarmHistory.objects.filter(alarm=alarm, cleared_at__isnull=True).order_by("-triggered_at").first()
         )
 
         if active_history:
             active_history.cleared_at = timezone.now()
             active_history.save(update_fields=["cleared_at"])
 
-        logger.info(
-            f"ALARM CLEARED: {alarm.name} "
-            f"(Register: {alarm.register.name}, Value: {value})"
-        )
+        logger.info(f"ALARM CLEARED: {alarm.name} " f"(Register: {alarm.register.name}, Value: {value})")
 
     def check_all_alarms(self) -> dict:
         """
@@ -211,9 +200,7 @@ class AlarmChecker:
             .order_by("-triggered_at")
         )
 
-    def acknowledge_alarm(
-        self, alarm_history_id: int, acknowledged_by: str = None
-    ) -> bool:
+    def acknowledge_alarm(self, alarm_history_id: int, acknowledged_by: str = None) -> bool:
         """
         Bevestig een alarm.
 
@@ -234,9 +221,7 @@ class AlarmChecker:
             history.acknowledged = True
             history.acknowledged_at = timezone.now()
             history.acknowledged_by = acknowledged_by or "system"
-            history.save(
-                update_fields=["acknowledged", "acknowledged_at", "acknowledged_by"]
-            )
+            history.save(update_fields=["acknowledged", "acknowledged_at", "acknowledged_by"])
 
             logger.info(f"Alarm {history.alarm.name} bevestigd door {acknowledged_by}")
             return True

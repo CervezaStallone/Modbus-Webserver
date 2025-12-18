@@ -78,20 +78,14 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name="alarm",
-            index=models.Index(
-                fields=["last_triggered"], name="modbus_app__last_tr_80a180_idx"
-            ),
+            index=models.Index(fields=["last_triggered"], name="modbus_app__last_tr_80a180_idx"),
         ),
         migrations.AddIndex(
             model_name="alarmhistory",
-            index=models.Index(
-                fields=["alarm", "-triggered_at"], name="modbus_app__alarm_i_7bb3cd_idx"
-            ),
+            index=models.Index(fields=["alarm", "-triggered_at"], name="modbus_app__alarm_i_7bb3cd_idx"),
         ),
         migrations.AddIndex(
             model_name="alarmhistory",
-            index=models.Index(
-                fields=["cleared_at"], name="modbus_app__cleared_72f296_idx"
-            ),
+            index=models.Index(fields=["cleared_at"], name="modbus_app__cleared_72f296_idx"),
         ),
     ]

@@ -72,9 +72,7 @@ class ModbusDriverBase(ABC):
             result = self.client.read_discrete_inputs(address, count, slave=slave_id)
 
             if result.isError():
-                logger.error(
-                    f"Error reading discrete inputs from slave {slave_id} at {address}"
-                )
+                logger.error(f"Error reading discrete inputs from slave {slave_id} at {address}")
                 self._connected = False
                 return None
 
@@ -95,9 +93,7 @@ class ModbusDriverBase(ABC):
             result = self.client.read_holding_registers(address, count, slave=slave_id)
 
             if result.isError():
-                logger.error(
-                    f"Error reading holding registers from slave {slave_id} at {address}"
-                )
+                logger.error(f"Error reading holding registers from slave {slave_id} at {address}")
                 self._connected = False
                 return None
 
@@ -118,9 +114,7 @@ class ModbusDriverBase(ABC):
             result = self.client.read_input_registers(address, count, slave=slave_id)
 
             if result.isError():
-                logger.error(
-                    f"Error reading input registers from slave {slave_id} at {address}"
-                )
+                logger.error(f"Error reading input registers from slave {slave_id} at {address}")
                 self._connected = False
                 return None
 
@@ -200,9 +194,7 @@ class ModbusDriverBase(ABC):
             result = self.client.write_registers(address, values, slave=slave_id)
 
             if result.isError():
-                logger.error(
-                    f"Error writing registers to slave {slave_id} at {address}"
-                )
+                logger.error(f"Error writing registers to slave {slave_id} at {address}")
                 self._connected = False
                 return False
 
@@ -212,9 +204,7 @@ class ModbusDriverBase(ABC):
             self._connected = False
             return False
 
-    def convert_registers_to_value(
-        self, registers, data_type, byte_order="big", word_order="high_low"
-    ):
+    def convert_registers_to_value(self, registers, data_type, byte_order="big", word_order="high_low"):
         """
         Convert register values to actual data type.
 
@@ -309,13 +299,9 @@ class ModbusRTUDriver(ModbusDriverBase):
             self._connected = connected
 
             if connected:
-                logger.info(
-                    f"Connected to RTU interface {self.interface.name} on {self.interface.port}"
-                )
+                logger.info(f"Connected to RTU interface {self.interface.name} on {self.interface.port}")
             else:
-                logger.error(
-                    f"Failed to connect to RTU interface {self.interface.name}"
-                )
+                logger.error(f"Failed to connect to RTU interface {self.interface.name}")
 
             return connected
 
@@ -355,9 +341,7 @@ class ModbusTCPDriver(ModbusDriverBase):
                     f"Connected to TCP interface {self.interface.name} at {self.interface.host}:{self.interface.tcp_port}"
                 )
             else:
-                logger.error(
-                    f"Failed to connect to TCP interface {self.interface.name}"
-                )
+                logger.error(f"Failed to connect to TCP interface {self.interface.name}")
 
             return connected
 

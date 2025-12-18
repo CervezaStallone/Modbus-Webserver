@@ -32,9 +32,7 @@ class DataAggregator:
         if start_time is None:
             # Neem vorig uur (afgerond)
             now = timezone.now()
-            start_time = now.replace(minute=0, second=0, microsecond=0) - timedelta(
-                hours=1
-            )
+            start_time = now.replace(minute=0, second=0, microsecond=0) - timedelta(hours=1)
 
         end_time = start_time + timedelta(hours=1)
 
@@ -47,9 +45,7 @@ class DataAggregator:
         )
 
         if not data.exists():
-            logger.debug(
-                f"Geen data voor {register.name} tussen {start_time} en {end_time}"
-            )
+            logger.debug(f"Geen data voor {register.name} tussen {start_time} en {end_time}")
             return 0
 
         # Bereken aggregaties
@@ -96,9 +92,7 @@ class DataAggregator:
         if start_time is None:
             # Neem gisteren (00:00)
             now = timezone.now()
-            start_time = now.replace(
-                hour=0, minute=0, second=0, microsecond=0
-            ) - timedelta(days=1)
+            start_time = now.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=1)
 
         end_time = start_time + timedelta(days=1)
 
@@ -111,9 +105,7 @@ class DataAggregator:
         )
 
         if not hourly_data.exists():
-            logger.debug(
-                f"Geen hourly data voor {register.name} voor {start_time.date()}"
-            )
+            logger.debug(f"Geen hourly data voor {register.name} voor {start_time.date()}")
             return 0
 
         # Bereken aggregaties van hourly data
@@ -161,9 +153,7 @@ class DataAggregator:
             # Neem vorige week maandag
             now = timezone.now()
             days_since_monday = now.weekday()
-            start_time = now.replace(
-                hour=0, minute=0, second=0, microsecond=0
-            ) - timedelta(days=days_since_monday + 7)
+            start_time = now.replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=days_since_monday + 7)
 
         end_time = start_time + timedelta(days=7)
 
@@ -176,9 +166,7 @@ class DataAggregator:
         )
 
         if not daily_data.exists():
-            logger.debug(
-                f"Geen daily data voor {register.name} voor week {start_time.date()}"
-            )
+            logger.debug(f"Geen daily data voor {register.name} voor week {start_time.date()}")
             return 0
 
         # Bereken aggregaties van daily data
@@ -280,15 +268,11 @@ class DataAggregator:
 
         # Cleanup hourly aggregaties
         hourly_cutoff = now - timedelta(days=hourly_data_days)
-        hourly_deleted = TrendDataAggregated.objects.filter(
-            interval="hourly", timestamp__lt=hourly_cutoff
-        ).delete()
+        hourly_deleted = TrendDataAggregated.objects.filter(interval="hourly", timestamp__lt=hourly_cutoff).delete()
 
         # Cleanup daily aggregaties
         daily_cutoff = now - timedelta(days=daily_data_days)
-        daily_deleted = TrendDataAggregated.objects.filter(
-            interval="daily", timestamp__lt=daily_cutoff
-        ).delete()
+        daily_deleted = TrendDataAggregated.objects.filter(interval="daily", timestamp__lt=daily_cutoff).delete()
 
         logger.info(
             f"Data cleanup voltooid: "

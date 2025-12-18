@@ -138,21 +138,15 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "stopbits",
-                    models.IntegerField(
-                        blank=True, choices=[(1, "1"), (2, "2")], default=1, null=True
-                    ),
+                    models.IntegerField(blank=True, choices=[(1, "1"), (2, "2")], default=1, null=True),
                 ),
                 (
                     "bytesize",
-                    models.IntegerField(
-                        blank=True, choices=[(7, "7"), (8, "8")], default=8, null=True
-                    ),
+                    models.IntegerField(blank=True, choices=[(7, "7"), (8, "8")], default=8, null=True),
                 ),
                 (
                     "host",
-                    models.CharField(
-                        blank=True, help_text="IP address or hostname", max_length=100
-                    ),
+                    models.CharField(blank=True, help_text="IP address or hostname", max_length=100),
                 ),
                 (
                     "tcp_port",
@@ -196,9 +190,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "timestamp",
-                    models.DateTimeField(
-                        db_index=True, default=django.utils.timezone.now
-                    ),
+                    models.DateTimeField(db_index=True, default=django.utils.timezone.now),
                 ),
                 (
                     "action",
@@ -222,9 +214,7 @@ class Migration(migrations.Migration):
             options={
                 "ordering": ["-timestamp"],
                 "indexes": [
-                    models.Index(
-                        fields=["timestamp"], name="modbus_app__timesta_68ed5f_idx"
-                    ),
+                    models.Index(fields=["timestamp"], name="modbus_app__timesta_68ed5f_idx"),
                     models.Index(
                         fields=["model_name", "object_id"],
                         name="modbus_app__model_n_0509fe_idx",
@@ -503,9 +493,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "chart_color",
-                    models.CharField(
-                        default="#007bff", help_text="Hex color code", max_length=7
-                    ),
+                    models.CharField(default="#007bff", help_text="Hex color code", max_length=7),
                 ),
                 ("show_legend", models.BooleanField(default=True)),
                 (
@@ -577,16 +565,12 @@ class Migration(migrations.Migration):
                 ("name", models.CharField(max_length=100)),
                 (
                     "formula",
-                    models.TextField(
-                        help_text="Python expression (e.g., 'register_1 + register_2 * 1.5')"
-                    ),
+                    models.TextField(help_text="Python expression (e.g., 'register_1 + register_2 * 1.5')"),
                 ),
                 ("unit", models.CharField(blank=True, max_length=20)),
                 (
                     "update_interval",
-                    models.IntegerField(
-                        default=5, help_text="Recalculate every X seconds"
-                    ),
+                    models.IntegerField(default=5, help_text="Recalculate every X seconds"),
                 ),
                 ("last_value", models.FloatField(blank=True, null=True)),
                 ("last_calculated", models.DateTimeField(blank=True, null=True)),
@@ -602,9 +586,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "source_registers",
-                    models.ManyToManyField(
-                        related_name="calculated_by", to="modbus_app.register"
-                    ),
+                    models.ManyToManyField(related_name="calculated_by", to="modbus_app.register"),
                 ),
             ],
             options={
@@ -642,9 +624,7 @@ class Migration(migrations.Migration):
                 ("threshold_low", models.FloatField(blank=True, null=True)),
                 (
                     "hysteresis",
-                    models.FloatField(
-                        default=0.0, help_text="Hysteresis to prevent alarm flapping"
-                    ),
+                    models.FloatField(default=0.0, help_text="Hysteresis to prevent alarm flapping"),
                 ),
                 (
                     "severity",
@@ -691,9 +671,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "timestamp",
-                    models.DateTimeField(
-                        db_index=True, default=django.utils.timezone.now
-                    ),
+                    models.DateTimeField(db_index=True, default=django.utils.timezone.now),
                 ),
                 ("raw_value", models.FloatField()),
                 ("converted_value", models.FloatField()),
@@ -779,9 +757,7 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "timestamp",
-                    models.DateTimeField(
-                        db_index=True, default=django.utils.timezone.now
-                    ),
+                    models.DateTimeField(db_index=True, default=django.utils.timezone.now),
                 ),
                 (
                     "event_type",
@@ -818,15 +794,11 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name="device",
-            index=models.Index(
-                fields=["interface", "enabled"], name="modbus_app__interfa_5661d6_idx"
-            ),
+            index=models.Index(fields=["interface", "enabled"], name="modbus_app__interfa_5661d6_idx"),
         ),
         migrations.AddIndex(
             model_name="device",
-            index=models.Index(
-                fields=["connection_status"], name="modbus_app__connect_d0f2b9_idx"
-            ),
+            index=models.Index(fields=["connection_status"], name="modbus_app__connect_d0f2b9_idx"),
         ),
         migrations.AlterUniqueTogether(
             name="device",
@@ -834,15 +806,11 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name="register",
-            index=models.Index(
-                fields=["device", "enabled"], name="modbus_app__device__2f414a_idx"
-            ),
+            index=models.Index(fields=["device", "enabled"], name="modbus_app__device__2f414a_idx"),
         ),
         migrations.AddIndex(
             model_name="register",
-            index=models.Index(
-                fields=["function_code"], name="modbus_app__functio_a43e3f_idx"
-            ),
+            index=models.Index(fields=["function_code"], name="modbus_app__functio_a43e3f_idx"),
         ),
         migrations.AlterUniqueTogether(
             name="register",
@@ -850,33 +818,23 @@ class Migration(migrations.Migration):
         ),
         migrations.AddIndex(
             model_name="dashboardwidget",
-            index=models.Index(
-                fields=["group", "row_position"], name="modbus_app__group_i_0b2b15_idx"
-            ),
+            index=models.Index(fields=["group", "row_position"], name="modbus_app__group_i_0b2b15_idx"),
         ),
         migrations.AddIndex(
             model_name="alarm",
-            index=models.Index(
-                fields=["register", "enabled"], name="modbus_app__registe_596a4e_idx"
-            ),
+            index=models.Index(fields=["register", "enabled"], name="modbus_app__registe_596a4e_idx"),
         ),
         migrations.AddIndex(
             model_name="alarm",
-            index=models.Index(
-                fields=["active", "acknowledged"], name="modbus_app__active_a555cc_idx"
-            ),
+            index=models.Index(fields=["active", "acknowledged"], name="modbus_app__active_a555cc_idx"),
         ),
         migrations.AddIndex(
             model_name="trenddata",
-            index=models.Index(
-                fields=["register", "-timestamp"], name="modbus_app__registe_e2e208_idx"
-            ),
+            index=models.Index(fields=["register", "-timestamp"], name="modbus_app__registe_e2e208_idx"),
         ),
         migrations.AddIndex(
             model_name="trenddata",
-            index=models.Index(
-                fields=["timestamp"], name="modbus_app__timesta_58ebca_idx"
-            ),
+            index=models.Index(fields=["timestamp"], name="modbus_app__timesta_58ebca_idx"),
         ),
         migrations.AddIndex(
             model_name="trenddata",

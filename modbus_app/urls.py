@@ -13,17 +13,11 @@ router.register(r"interfaces", views.ModbusInterfaceViewSet, basename="interface
 router.register(r"devices", views.DeviceViewSet, basename="device")
 router.register(r"registers", views.RegisterViewSet, basename="register")
 router.register(r"trend-data", views.TrendDataViewSet, basename="trenddata")
-router.register(
-    r"dashboard-groups", views.DashboardGroupViewSet, basename="dashboardgroup"
-)
-router.register(
-    r"dashboard-widgets", views.DashboardWidgetViewSet, basename="dashboardwidget"
-)
+router.register(r"dashboard-groups", views.DashboardGroupViewSet, basename="dashboardgroup")
+router.register(r"dashboard-widgets", views.DashboardWidgetViewSet, basename="dashboardwidget")
 router.register(r"alarms", views.AlarmViewSet, basename="alarm")
 router.register(r"alarm-history", views.AlarmHistoryViewSet, basename="alarmhistory")
-router.register(
-    r"device-templates", views.DeviceTemplateViewSet, basename="devicetemplate"
-)
+router.register(r"device-templates", views.DeviceTemplateViewSet, basename="devicetemplate")
 router.register(
     r"calculated-registers",
     views.CalculatedRegisterViewSet,
@@ -54,9 +48,7 @@ urlpatterns = [
         views.register_edit_view,
         name="register_edit",
     ),
-    path(
-        "config/dashboard-layout/", views.dashboard_layout_view, name="dashboard_layout"
-    ),
+    path("config/dashboard-layout/", views.dashboard_layout_view, name="dashboard_layout"),
     path("config/alarms/", views.alarm_list_view, name="alarm_list"),
     path("config/templates/", views.template_list_view, name="template_list"),
     # API endpoints
