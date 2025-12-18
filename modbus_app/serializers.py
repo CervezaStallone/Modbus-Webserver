@@ -2,7 +2,6 @@
 DRF Serializers voor alle Modbus models.
 """
 
-from django.utils import timezone
 from rest_framework import serializers
 
 from .models import (
@@ -280,7 +279,7 @@ class DashboardWidgetSerializer(serializers.ModelSerializer):
                 latest = TrendData.objects.filter(register=obj.register).order_by("-timestamp").first()
                 if latest:
                     return latest.value
-        except Exception as e:
+        except Exception:
             pass
         return None
 

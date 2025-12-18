@@ -3,11 +3,10 @@ Alarm Checker voor het evalueren van alarm condities.
 """
 
 import logging
-from datetime import datetime
 
 from django.utils import timezone
 
-from ..models import Alarm, AlarmHistory, Register, TrendData
+from ..models import Alarm, AlarmHistory, TrendData
 
 logger = logging.getLogger(__name__)
 
@@ -96,7 +95,7 @@ class AlarmChecker:
         elif condition == "range":
             # Binnen range (low <= value <= high)
             if threshold_low is None:
-                logger.error(f"range conditie vereist threshold_low")
+                logger.error("range conditie vereist threshold_low")
                 return False
             return not (threshold_low - hysteresis <= value <= threshold_high + hysteresis)
 

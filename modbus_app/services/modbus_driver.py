@@ -7,7 +7,6 @@ import struct
 from abc import ABC, abstractmethod
 
 from pymodbus.client import ModbusSerialClient, ModbusTcpClient
-from pymodbus.exceptions import ModbusException
 
 logger = logging.getLogger(__name__)
 
@@ -45,7 +44,7 @@ class ModbusDriverBase(ABC):
         try:
             if not self.is_connected():
                 if not self.connect():
-                    logger.error(f"Failed to connect before reading coils")
+                    logger.error("Failed to connect before reading coils")
                     return None
 
             result = self.client.read_coils(address, count, slave=slave_id)
@@ -66,7 +65,7 @@ class ModbusDriverBase(ABC):
         try:
             if not self.is_connected():
                 if not self.connect():
-                    logger.error(f"Failed to connect before reading discrete inputs")
+                    logger.error("Failed to connect before reading discrete inputs")
                     return None
 
             result = self.client.read_discrete_inputs(address, count, slave=slave_id)
@@ -87,7 +86,7 @@ class ModbusDriverBase(ABC):
         try:
             if not self.is_connected():
                 if not self.connect():
-                    logger.error(f"Failed to connect before reading holding registers")
+                    logger.error("Failed to connect before reading holding registers")
                     return None
 
             result = self.client.read_holding_registers(address, count, slave=slave_id)
@@ -108,7 +107,7 @@ class ModbusDriverBase(ABC):
         try:
             if not self.is_connected():
                 if not self.connect():
-                    logger.error(f"Failed to connect before reading input registers")
+                    logger.error("Failed to connect before reading input registers")
                     return None
 
             result = self.client.read_input_registers(address, count, slave=slave_id)
@@ -129,7 +128,7 @@ class ModbusDriverBase(ABC):
         try:
             if not self.is_connected():
                 if not self.connect():
-                    logger.error(f"Failed to connect before writing coil")
+                    logger.error("Failed to connect before writing coil")
                     return False
 
             result = self.client.write_coil(address, value, slave=slave_id)
@@ -167,7 +166,7 @@ class ModbusDriverBase(ABC):
         try:
             if not self.is_connected():
                 if not self.connect():
-                    logger.error(f"Failed to connect before writing coils")
+                    logger.error("Failed to connect before writing coils")
                     return False
 
             result = self.client.write_coils(address, values, slave=slave_id)
