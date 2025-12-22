@@ -60,7 +60,7 @@ python-dateutil==2.9.0.post0
 python-dotenv==1.0.0
 pytz==2024.1
 PyYAML==6.0.3
-redis==5.0.1
+redis==7.1.0
 referencing==0.37.0
 rpds-py==0.30.0
 service-identity==24.2.0
