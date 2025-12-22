@@ -1,5 +1,5 @@
 # Multi-stage build for smaller and more secure final image
-FROM python:3.13-slim-bookworm AS builder
+FROM python:3.14-slim-bookworm AS builder
 
 # Set environment variables
 ENV PYTHONDONTWRITEBYTECODE=1
@@ -20,7 +20,7 @@ RUN pip install --upgrade pip && \
     pip wheel --no-cache-dir --no-deps --wheel-dir /app/wheels -r requirements.txt
 
 # Final stage
-FROM python:3.13-slim-bookworm
+FROM python:3.14-slim-bookworm
 
 # Create non-root user for security
 RUN groupadd -r appuser && useradd -r -g appuser appuser
