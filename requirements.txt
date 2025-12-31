@@ -6,7 +6,7 @@ attrs==25.4.0
 autobahn==25.12.1
 Automat==25.4.16
 billiard==4.2.4
-cbor2==5.7.1
+cbor2==5.8.0
 celery==5.3.4
 cffi==2.0.0
 channels==4.0.0
